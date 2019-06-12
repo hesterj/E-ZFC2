@@ -45,11 +45,11 @@ long compute_schemas_tform(ProofControl_p control,
 						   ProofState_p state);
 TFormula_p tformula_comprehension(TB_p bank, 
 								  ProofState_p state, 
-								  PTree_p freevars, 
+								  PTree_p* freevars, 
 								  TFormula_p input);
 ClauseSet_p tformula_replacement(TB_p bank, 
 								ProofState_p state, 
-								PTree_p freevars, 
+								PTree_p* freevars, 
 								TFormula_p input,
 								Clause_p clause);
 Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
@@ -75,22 +75,22 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 	TFormula_p clauseasformula;
 	TFormula_p schemaformula;
 	WFormula_p schemaaswformula;
-	PTree_p freevars = PTreeCellAllocEmpty();
+	PTree_p freevars = NULL;
 	ClauseSet_p final = ClauseSetAlloc();
 	Clause_p tobeevaluated;
 	Clause_p clausecopy = ClauseCopy(clause,bank);
 	
 	clauseasformula = TFormulaClauseEncode(bank, clausecopy);
-	TFormulaCollectFreeVars(bank, clauseasformula, freevars);
+	TFormulaCollectFreeVars(bank, clauseasformula, &freevars);
 	numfreevars = PTreeNodes(freevars);
 	
 	if (numfreevars == 2)  //Comprehension
 	{
-		schemaformula = tformula_comprehension(bank, state, freevars, clauseasformula);
+		schemaformula = tformula_comprehension(bank, state, &freevars, clauseasformula);
 		schemaaswformula = WTFormulaAlloc(bank,schemaformula);
 		res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
 		//printf("\nC clauses: %ld\n",res);
-		while (tobeevaluated = ClauseSetExtractFirst(final))
+		while ((tobeevaluated = ClauseSetExtractFirst(final)))
 		{
 		  //printf("\n@ ");
 		  //ClausePrint(GlobalOut,tobeevaluated,true);
@@ -106,9 +106,9 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 	else if (numfreevars == 3) // Replacement
 	{
 		
-		final = tformula_replacement(bank,state,freevars,clauseasformula,clausecopy);
+		final = tformula_replacement(bank,state,&freevars,clauseasformula,clausecopy);
 		
-		while (tobeevaluated = ClauseSetExtractFirst(final))
+		while ((tobeevaluated = ClauseSetExtractFirst(final)))
 		{
 		  //printf("\n@ ");
 		  //ClausePrint(GlobalOut,tobeevaluated,true);
@@ -117,7 +117,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		  HCBClauseEvaluate(control->hcb, tobeevaluated);
 		  //printf("\nevaluated");
 		}
-		WFormulaCellFree(schemaaswformula);
+		//WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful replacement\n");
 	}
 
@@ -130,7 +130,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 
 //  Compute comprehension instance for TFormula_p with ONE free variable
 
-TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input)
+TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input)
 {
 	void* pointer = PTreeExtractRootKey(freevars);
 	FunCode member = SigFindFCode(state->signature, "member");
@@ -167,7 +167,7 @@ TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevar
 	return input;
 }
 
-ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input, Clause_p clause)
+ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input, Clause_p clause)
 {
 	void* pointer0 = PTreeExtractRootKey(freevars);
 	void* pointer1 = PTreeExtractRootKey(freevars);
