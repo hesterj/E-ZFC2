@@ -35,6 +35,228 @@ PERF_CTR_DEFINE(BWRWTimer);
 /*                      Forward Declarations                           */
 /*---------------------------------------------------------------------*/
 
+void eval_clause_set_given(ProofState_p state, ProofControl_p control, ClauseSet_p set);
+long compute_schemas_tform(ProofControl_p control, 
+						   TB_p bank, 
+						   OCB_p ocb, 
+						   Clause_p clause,
+						   ClauseSet_p store, 
+						   VarBank_p freshvars, 
+						   ProofState_p state);
+TFormula_p tformula_comprehension(TB_p bank, 
+								  ProofState_p state, 
+								  PTree_p freevars, 
+								  TFormula_p input);
+ClauseSet_p tformula_replacement(TB_p bank, 
+								ProofState_p state, 
+								PTree_p freevars, 
+								TFormula_p input,
+								Clause_p clause);
+Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
+/*  John's Functions
+ * 
+*/
+
+
+
+//Redo of everything above but using E internal methods rather than printing to file (slow)
+
+long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_p clause,
+			  ClauseSet_p store, VarBank_p
+              freshvars, ProofState_p state) 
+{
+	if (clause->properties == CPIsSchema)
+	{
+		printf("\nSelected schema instance\n");
+	}
+	
+	long numfreevars = 0;
+	long res = 0;
+	TFormula_p clauseasformula;
+	TFormula_p schemaformula;
+	WFormula_p schemaaswformula;
+	PTree_p freevars = PTreeCellAllocEmpty();
+	ClauseSet_p final = ClauseSetAlloc();
+	Clause_p tobeevaluated;
+	Clause_p clausecopy = ClauseCopy(clause,bank);
+	
+	clauseasformula = TFormulaClauseEncode(bank, clausecopy);
+	TFormulaCollectFreeVars(bank, clauseasformula, freevars);
+	numfreevars = PTreeNodes(freevars);
+	
+	if (numfreevars == 2)  //Comprehension
+	{
+		schemaformula = tformula_comprehension(bank, state, freevars, clauseasformula);
+		schemaaswformula = WTFormulaAlloc(bank,schemaformula);
+		res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
+		//printf("\nC clauses: %ld\n",res);
+		while (tobeevaluated = ClauseSetExtractFirst(final))
+		{
+		  //printf("\n@ ");
+		  //ClausePrint(GlobalOut,tobeevaluated,true);
+		  tobeevaluated->properties = CPIsSchema;
+		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
+		  HCBClauseEvaluate(control->hcb, tobeevaluated);
+		}
+		WFormulaCellFree(schemaaswformula);
+		//printf("\nSuccessful comprehension\n");
+	}
+	
+	
+	else if (numfreevars == 3) // Replacement
+	{
+		
+		final = tformula_replacement(bank,state,freevars,clauseasformula,clausecopy);
+		
+		while (tobeevaluated = ClauseSetExtractFirst(final))
+		{
+		  //printf("\n@ ");
+		  //ClausePrint(GlobalOut,tobeevaluated,true);
+		  tobeevaluated->properties = CPIsSchema;
+		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
+		  HCBClauseEvaluate(control->hcb, tobeevaluated);
+		  //printf("\nevaluated");
+		}
+		WFormulaCellFree(schemaaswformula);
+		//printf("\nSuccessful replacement\n");
+	}
+
+	ClauseSetFree(final);
+	ClauseFree(clausecopy);
+	PTreeFree(freevars);
+	
+	return 0;
+}
+
+//  Compute comprehension instance for TFormula_p with ONE free variable
+
+TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input)
+{
+	void* pointer = PTreeExtractRootKey(freevars);
+	FunCode member = SigFindFCode(state->signature, "member");
+	//TFormula_p new = TFormulaCopy(bank,input);
+	
+	if (pointer == NULL)
+	{
+		printf("\nNULL pointer\n");
+	}
+	
+	TFormula_p freevariable = (TFormula_p) pointer;
+	
+	TFormula_p a = VarBankGetFreshVar(state->freshvars,freevariable->sort);
+	TFormula_p b = VarBankGetFreshVar(state->freshvars,freevariable->sort);
+	
+	TFormula_p xina = TFormulaFCodeAlloc(bank,member,freevariable,a);
+	TFormula_p xinb = TFormulaFCodeAlloc(bank,member,freevariable,b);
+	
+	Eqn_p xina_eq = EqnAlloc(xina,bank->true_term,bank,true);
+	Eqn_p xinb_eq = EqnAlloc(xinb,bank->true_term,bank,true);
+	
+	TFormula_p xina_f = TFormulaLitAlloc(xina_eq);
+	TFormula_p xinb_f = TFormulaLitAlloc(xinb_eq);
+	
+	input = TFormulaFCodeAlloc(bank,bank->sig->and_code,xina_f,input);
+	input = TFormulaFCodeAlloc(bank,bank->sig->equiv_code,xinb_f,input);
+	input = TFormulaAddQuantor(bank,input,true,freevariable);
+	input = TFormulaAddQuantor(bank,input,false,b);
+	input = TFormulaAddQuantor(bank,input,true,a);
+	
+	EqnFree(xina_eq);
+	EqnFree(xinb_eq);
+	
+	return input;
+}
+
+ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input, Clause_p clause)
+{
+	void* pointer0 = PTreeExtractRootKey(freevars);
+	void* pointer1 = PTreeExtractRootKey(freevars);
+	FunCode member = SigFindFCode(state->signature, "member");
+	ClauseSet_p final = ClauseSetAlloc();
+	//Subst_p binder = SubstAlloc();
+	
+	if (pointer0 == NULL || pointer1 == NULL)
+	{
+		printf("\nNULL pointer\n");
+	}
+	
+	TFormula_p temp1 = TFormulaCopy(bank,input);
+	TFormula_p temp2 = TFormulaCopy(bank,input);
+	
+	
+	TFormula_p x = (TFormula_p) pointer0;
+	TFormula_p y = (TFormula_p) pointer1;
+	
+	TFormula_p a = VarBankGetFreshVar(state->freshvars,x->sort);
+	TFormula_p b = VarBankGetFreshVar(state->freshvars,x->sort);
+	
+	TFormula_p c = VarBankGetFreshVar(state->freshvars,x->sort); //
+	//TFormula_p phi2 = tformula_substitute_variable(temp1,y,c);
+	
+	
+	Clause_p substitutedclause = ClauseMergeVars(clause, bank, y, c);
+	
+	TFormula_p phi2 = TFormulaClauseEncode(bank, substitutedclause);
+	
+	TFormula_p xina = TFormulaFCodeAlloc(bank,member,x,a);
+	Eqn_p xina_eq = EqnAlloc(xina,bank->true_term,bank,true);
+	TFormula_p xina_f = TFormulaLitAlloc(xina_eq);
+	
+	temp2 = TFormulaFCodeAlloc(bank,bank->sig->and_code,xina_f,temp2);
+	temp2 = TFormulaAddQuantor(bank,temp2,false,a);
+	
+	TFormula_p yinb = TFormulaFCodeAlloc(bank,member,y,b);
+	Eqn_p yinb_eq = EqnAlloc(yinb,bank->true_term,bank,true);
+	TFormula_p yinb_f = TFormulaLitAlloc(yinb_eq);
+	
+	temp2 = TFormulaFCodeAlloc(bank,bank->sig->equiv_code,yinb_f,temp2);
+	temp2 = TFormulaAddQuantor(bank,temp2,true,y);
+	temp2 = TFormulaAddQuantor(bank,temp2,false,b);
+	temp2 = TFormulaAddQuantor(bank,temp2,true,a);
+	
+	TFormula_p yeqc = TFormulaFCodeAlloc(bank,bank->sig->eqn_code,y,c);
+	
+	phi2 = TFormulaFCodeAlloc(bank,bank->sig->equiv_code,phi2,yeqc);
+	phi2 = TFormulaAddQuantor(bank,phi2,true,c);
+	phi2 = TFormulaAddQuantor(bank,phi2,false,y);
+	phi2 = TFormulaAddQuantor(bank,phi2,true,x);
+	
+	// join
+	
+	temp2 = TFormulaFCodeAlloc(bank,bank->sig->impl_code,phi2,temp2);
+	
+	WFormula_p schemaaswformula = WTFormulaAlloc(bank,temp2);
+	long res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
+	//printf("\nR clauses: %ld\n",res);
+	return final;
+}
+/*-----------------------------------------------------------------------
+//
+// Function: ClauseMergeVars()
+//
+//   Create a copy of clause in which the two variables x and y are
+//   merged, or, more exactly, every occurrence of x is replaced by
+//   one in y.
+//
+// Global Variables: -
+//
+// Side Effects    : Memory operations
+//
+/----------------------------------------------------------------------*/
+
+
+Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y)
+{
+   Subst_p  subst = SubstAlloc();
+   Clause_p new_clause;
+   
+   SubstAddBinding(subst, x,y);
+   new_clause = ClauseCopy(clause, bank);
+   SubstDelete(subst);
+
+   return new_clause;
+}
+
 
 /*---------------------------------------------------------------------*/
 /*                         Internal Functions                          */
@@ -357,6 +579,16 @@ void simplify_watchlist(ProofState_p state, ProofControl_p control,
 static void generate_new_clauses(ProofState_p state, ProofControl_p
                                  control, Clause_p clause, Clause_p tmp_copy)
 {
+	//generate new schema instances and add to tmp_store
+   //printf("\nSchema mode!!!\n");
+   
+   state->paramod_count += compute_schemas_tform(control,
+										state->terms,
+										control->ocb,
+										clause,
+										state->tmp_store, state->freshvars,
+										state);
+
    if(control->heuristic_parms.enable_eq_factoring)
    {
       state->factor_count+=
