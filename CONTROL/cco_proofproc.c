@@ -53,10 +53,35 @@ ClauseSet_p tformula_replacement(TB_p bank,
 								TFormula_p input,
 								Clause_p clause);
 Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
+long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p collector);
 /*  John's Functions
  * 
 */
 
+//Collect all the subformulas of the input by looking for "terms" whose top FunCode is a predicate symbol
+//This means that we need to worry about the situation where term encoded predicates are masked by an equality with $true
+
+long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p collector)
+{
+	long subformula_count = 0;
+	bool searching = true;
+	int arity = input->arity;
+	FunCode equals = state->signature->eqn_code;
+	FunCode code = input->f_code;
+	Sig_p sig = state->signature;
+	
+	if ((input->arity == 0) || !SigIsPredicate(sig,code)) return 0;
+	else
+	{
+		PStackPushP(collector,input);
+		for (int i=0; i < arity; i++)
+		{
+			subformula_count += TFormulaCollectSubFormulas(state,input->args[i],collector);
+		}
+	}
+	
+	return subformula_count;
+}
 
 
 //Redo of everything above but using E internal methods rather than printing to file (slow)
@@ -97,12 +122,13 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		  tobeevaluated->properties = CPIsSchema;
 		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
 		  HCBClauseEvaluate(control->hcb, tobeevaluated);
+		  printf("\nliterals: %i %i\n",tobeevaluated->neg_lit_no,tobeevaluated->pos_lit_no);
 		}
 		WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful comprehension\n");
 	}
 	
-	
+	/*
 	else if (numfreevars == 3) // Replacement
 	{
 		
@@ -120,7 +146,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful replacement\n");
 	}
-
+	*/
 	ClauseSetFree(final);
 	ClauseFree(clausecopy);
 	PTreeFree(freevars);
@@ -133,7 +159,8 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input)
 {
 	void* pointer = PTreeExtractRootKey(freevars);
-	FunCode member = SigFindFCode(state->signature, "member");
+	//FunCode member = SigFindFCode(state->signature, "member");
+	FunCode member = SigFindFCode(state->signature, "r2_hidden"); // mizar
 	//TFormula_p new = TFormulaCopy(bank,input);
 	
 	if (pointer == NULL)
@@ -171,7 +198,8 @@ ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p freevars
 {
 	void* pointer0 = PTreeExtractRootKey(freevars);
 	void* pointer1 = PTreeExtractRootKey(freevars);
-	FunCode member = SigFindFCode(state->signature, "member");
+	//FunCode member = SigFindFCode(state->signature, "member"); // Quaife
+	FunCode member = SigFindFCode(state->signature, "r2_hidden"); // mizar
 	ClauseSet_p final = ClauseSetAlloc();
 	//Subst_p binder = SubstAlloc();
 	

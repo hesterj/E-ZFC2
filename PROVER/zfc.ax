@@ -75,13 +75,13 @@ fof(complement,axiom,
 */
 % Intersection
 
-
+/*
 fof(intersection,axiom,
     ( ! [X,Y,Z] :
         ( member(Z,intersection(X,Y))
       <=> ( member(Z,X)
           & member(Z,Y) ) ) )).
-
+*/
 % Subclass
 
 fof(subclass_defn, axiom, ![X,Y]: (subclass(X,Y)<=>![Z]:(member(Z,X)=>member(Z,Y)))).
@@ -218,3 +218,4 @@ fof(strict_well_order,axiom,(
 /*
 fof(test,conjecture,![X]:(member(X,omega)=>member(successor(X),omega))).
 */
+fof(test,conjecture,![X,Y]:?[Z]:![W]:(member(W,Z)<=>(member(W,X)&member(W,Y))) ).
