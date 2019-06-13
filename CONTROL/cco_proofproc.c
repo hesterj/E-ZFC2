@@ -69,7 +69,7 @@ long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p c
 	FunCode equals = state->signature->eqn_code;
 	FunCode code = input->f_code;
 	Sig_p sig = state->signature;
-	
+	/*
 	if ((input->arity == 0) || !SigIsPredicate(sig,code)) return 0;
 	else
 	{
@@ -79,7 +79,7 @@ long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p c
 			subformula_count += TFormulaCollectSubFormulas(state,input->args[i],collector);
 		}
 	}
-	
+	*/
 	return subformula_count;
 }
 
