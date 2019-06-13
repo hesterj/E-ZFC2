@@ -65,9 +65,10 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 			  ClauseSet_p store, VarBank_p
               freshvars, ProofState_p state) 
 {
-	if (clause->properties == CPIsSchema)
+	if (ClauseQueryProp(clause, CPIsSchema))
 	{
 		printf("\nSelected schema instance\n");
+      return 0;
 	}
 	
 	long numfreevars = 0;
@@ -81,29 +82,44 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 	Clause_p clausecopy = ClauseCopy(clause,bank);
 	
 	clauseasformula = TFormulaClauseEncode(bank, clausecopy);
+   VarBankVarsSetProp(bank->vars, TPIsFreeVar);
 	TFormulaCollectFreeVars(bank, clauseasformula, &freevars);
 	numfreevars = PTreeNodes(freevars);
 	
-	if (numfreevars == 2)  //Comprehension
+	if (numfreevars == 1)  //Comprehension
 	{
 		schemaformula = tformula_comprehension(bank, state, &freevars, clauseasformula);
+
 		schemaaswformula = WTFormulaAlloc(bank,schemaformula);
+
+      //yan
+      if (OutputLevel >= 1)
+      {
+         fprintf(GlobalOut,   "COMPREHENSION: term: ");
+         TermPrint(GlobalOut, schemaformula, bank->sig, DEREF_ALWAYS);
+         fprintf(GlobalOut, "\n            formula: ");
+         WFormulaPrint(GlobalOut, schemaaswformula, true);
+         fprintf(GlobalOut, "\n");
+      }
+      //
+
 		res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
 		//printf("\nC clauses: %ld\n",res);
 		while ((tobeevaluated = ClauseSetExtractFirst(final)))
 		{
 		  //printf("\n@ ");
 		  //ClausePrint(GlobalOut,tobeevaluated,true);
-		  tobeevaluated->properties = CPIsSchema;
+        ClauseSetProp(tobeevaluated, CPIsSchema);
 		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
 		  HCBClauseEvaluate(control->hcb, tobeevaluated);
 		}
 		WFormulaCellFree(schemaaswformula);
+		//printf("\n");
 		//printf("\nSuccessful comprehension\n");
 	}
 	
 	
-	else if (numfreevars == 3) // Replacement
+	else if (numfreevars == 2) // Replacement
 	{
 		
 		final = tformula_replacement(bank,state,&freevars,clauseasformula,clausecopy);
@@ -112,10 +128,10 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		{
 		  //printf("\n@ ");
 		  //ClausePrint(GlobalOut,tobeevaluated,true);
-		  tobeevaluated->properties = CPIsSchema;
+        ClauseSetProp(tobeevaluated, CPIsSchema);
 		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
 		  HCBClauseEvaluate(control->hcb, tobeevaluated);
-		  //printf("\nevaluated");
+		  //printf("\n");
 		}
 		//WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful replacement\n");
@@ -226,6 +242,18 @@ ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevar
 	temp2 = TFormulaFCodeAlloc(bank,bank->sig->impl_code,phi2,temp2);
 	
 	WFormula_p schemaaswformula = WTFormulaAlloc(bank,temp2);
+      
+   //yan
+   if (OutputLevel >= 1)
+   {
+      fprintf(GlobalOut,   "REPLACEMENT: term: ");
+      TermPrint(GlobalOut, temp2, bank->sig, DEREF_ALWAYS);
+      fprintf(GlobalOut, "\n          formula: ");
+      WFormulaPrint(GlobalOut, schemaaswformula, true);
+      fprintf(GlobalOut, "\n");
+   }
+   //
+
 	long res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
 	//printf("\nR clauses: %ld\n",res);
 	return final;
