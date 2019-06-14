@@ -75,6 +75,29 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
                   total_limit,  long generated_limit, long tb_insert_limit,
                   long answer_limit);
 
+// ZFC Functions
+void eval_clause_set_given(ProofState_p state, ProofControl_p control, ClauseSet_p set);
+long compute_schemas_tform(ProofControl_p control, 
+						   TB_p bank, 
+						   OCB_p ocb, 
+						   Clause_p clause,
+						   ClauseSet_p store, 
+						   VarBank_p freshvars, 
+						   ProofState_p state);
+TFormula_p tformula_comprehension(TB_p bank, 
+								  ProofState_p state, 
+								  PTree_p freevars, 
+								  TFormula_p input);
+ClauseSet_p tformula_replacement(TB_p bank, 
+								ProofState_p state, 
+								PTree_p freevars, 
+								TFormula_p input,
+								Clause_p clause);
+Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
+
+long TFormulaCollectSubformulas(ProofState_p state, TFormula_p input, FormulaSet_p collector);
+long WFormulaCollectSubformulas(ProofState_p state, WFormula_p input, FormulaSet_p collector);
+long FormulaSetCollectSubformulas(ProofState_p state, FormulaSet_p input, FormulaSet_p collector);
 
 
 #endif

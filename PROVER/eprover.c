@@ -406,6 +406,14 @@ int main(int argc, char* argv[])
 
    relevancy_pruned += ProofStateSinE(proofstate, sine);
    relevancy_pruned += ProofStatePreprocess(proofstate, relevance_prune_level);
+   
+   printf("\n%ld\n",proofstate->f_axioms->members);
+   printf("\n%ld\n",proofstate->f_ax_archive->members);
+   FormulaSet_p subformulas = FormulaSetAlloc();
+   long subformulas_count = FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+   FormulaSetPrint(GlobalOut,subformulas,true);
+   printf("\n%ld %ld\n",subformulas->members,subformulas_count);
+   exit(0);
 
    if(strategy_scheduling)
    {

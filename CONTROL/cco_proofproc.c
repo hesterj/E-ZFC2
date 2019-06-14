@@ -35,51 +35,87 @@ PERF_CTR_DEFINE(BWRWTimer);
 /*---------------------------------------------------------------------*/
 
 
-void eval_clause_set_given(ProofState_p state, ProofControl_p control, ClauseSet_p set);
-long compute_schemas_tform(ProofControl_p control, 
-						   TB_p bank, 
-						   OCB_p ocb, 
-						   Clause_p clause,
-						   ClauseSet_p store, 
-						   VarBank_p freshvars, 
-						   ProofState_p state);
-TFormula_p tformula_comprehension(TB_p bank, 
-								  ProofState_p state, 
-								  PTree_p freevars, 
-								  TFormula_p input);
-ClauseSet_p tformula_replacement(TB_p bank, 
-								ProofState_p state, 
-								PTree_p freevars, 
-								TFormula_p input,
-								Clause_p clause);
-Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
-long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p collector);
+//FormulaSet_p PStackToFormulaSet(PStack_p collector);
+
 /*  John's Functions
  * 
 */
 
+bool TermIsPredicate(Term_p term);
+bool SubformulaCandidateCheck(Sig_p sig, Term_p term);
+TermIsBooleanSymbol(Sig_p sig, Term_p term);
+
+// Functions below
+
+bool TermIsPredicate(Term_p term)
+{
+	bool check = (term->arity == 2 && ((term->args[0]->f_code == SIG_TRUE_CODE)
+				|| (term->args[1]->f_code == SIG_TRUE_CODE)));
+	return check;
+}
+
+TermIsBooleanSymbol(Sig_p sig, Term_p term)
+{
+	FunCode fcode = term->f_code;
+	bool check = (fcode == sig->eqn_code || fcode == sig->neqn_code
+				|| (fcode == sig->not_code) || (fcode == sig->or_code)
+											 || (fcode == sig->qall_code)
+											 || (fcode == sig->qex_code)
+											 || (fcode == sig->impl_code)
+											 || (fcode == sig->equiv_code)
+											 || (fcode == sig->and_code)
+											 || (fcode == sig->bimpl_code));
+	return check;
+}
+
+bool SubformulaCandidateCheck(Sig_p sig, Term_p term)
+{
+	bool check = (TermIsPredicate(term) || TermIsBooleanSymbol(sig,term));
+	return check;
+}
+// collect all subformulas of the formulaset, store them in collector then pass them to a formulaset that is return
+
+long FormulaSetCollectSubformulas(ProofState_p state, FormulaSet_p input, FormulaSet_p collector)
+{
+	WFormula_p handle = input->anchor->succ;
+	long subformula_count = 0;
+	while (handle != input->anchor)
+	{
+		subformula_count += WFormulaCollectSubformulas(state,handle,collector);
+		handle = handle->succ;
+	}
+	return subformula_count;
+}
+
+//Wrapper for TFormulaCollectSubformulas
+
+long WFormulaCollectSubformulas(ProofState_p state, WFormula_p input, FormulaSet_p collector)
+{
+	return TFormulaCollectSubformulas(state,input->tformula,collector);
+}
+
 //Collect all the subformulas of the input by looking for "terms" whose top FunCode is a predicate symbol
 //This means that we need to worry about the situation where term encoded predicates are masked by an equality with $true
 
-long TFormulaCollectSubFormulas(ProofState_p state, TFormula_p input, PStack_p collector)
+long TFormulaCollectSubformulas(ProofState_p state, TFormula_p term, FormulaSet_p collector)
 {
 	long subformula_count = 0;
-	bool searching = true;
-	int arity = input->arity;
-	FunCode equals = state->signature->eqn_code;
-	FunCode code = input->f_code;
+	WFormula_p handle;
 	Sig_p sig = state->signature;
-	/*
-	if ((input->arity == 0) || !SigIsPredicate(sig,code)) return 0;
-	else
+	
+	if (SubformulaCandidateCheck(sig,term))
 	{
-		PStackPushP(collector,input);
-		for (int i=0; i < arity; i++)
+		handle = WTFormulaAlloc(state->terms,term);
+		FormulaSetInsert(collector,handle);
+		subformula_count++;
+		for (int i=0; i<term->arity; i++)
 		{
-			subformula_count += TFormulaCollectSubFormulas(state,input->args[i],collector);
+			if (term->args[i]->arity > 0)
+			{
+				subformula_count += TFormulaCollectSubformulas(state,term->args[i],collector);
+			}
 		}
 	}
-	*/
 	return subformula_count;
 }
 
@@ -1880,8 +1916,15 @@ Clause_p Saturate(ProofState_p state, ProofControl_p control, long
 						state->tmp_store, state->freshvars,
 						state);
    */
-   
-   
+   /*
+   printf("\n%ld\n",state->f_axioms->members);
+   printf("\n%ld\n",state->f_ax_archive->members);
+   FormulaSet_p collector = FormulaSetAlloc();
+   long subformulas_count = FormulaSetCollectSubformulas(state,state->f_ax_archive,collector);
+   FormulaSetPrint(GlobalOut,collector,true);
+   printf("\n%ld %ld\n",collector->members,subformulas_count);
+   exit(0);
+   */
    // Begin the proof procedure
    while(!TimeIsUp &&
          !ClauseSetEmpty(state->unprocessed) &&
