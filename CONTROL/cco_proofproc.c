@@ -103,21 +103,20 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
       }
       //
 
-		res = WFormulaCNF(schemaaswformula,final,state->terms,state->freshvars);
-		//printf("\nC clauses: %ld\n",res);
+		res = WFormulaCNF(schemaaswformula,final,state->terms,/*state->freshvars*/bank->vars);
+		printf("\nC clauses: %ld\n",res);
 		while ((tobeevaluated = ClauseSetExtractFirst(final)))
 		{
-		  //printf("\n@ ");
-		  //ClausePrint(GlobalOut,tobeevaluated,true);
+		  printf("\n@ ");
+		  ClausePrint(GlobalOut,tobeevaluated,true);
         ClauseSetProp(tobeevaluated, CPIsSchema);
 		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
 		  HCBClauseEvaluate(control->hcb, tobeevaluated);
 		}
 		WFormulaCellFree(schemaaswformula);
-		//printf("\n");
-		//printf("\nSuccessful comprehension\n");
+		printf("\n");
+		printf("\nSuccessful comprehension\n");
 	}
-	
 	
 	else if (numfreevars == 2) // Replacement
 	{
@@ -148,16 +147,40 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 
 TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input)
 {
-	void* pointer = PTreeExtractRootKey(freevars);
 	FunCode member = SigFindFCode(state->signature, "member");
 	//TFormula_p new = TFormulaCopy(bank,input);
+   
+	Term_p z = PTreeExtractRootKey(freevars);
+   //Term_p x = VarBankVarAssertAlloc(bank->vars, z->f_code-2, STIndividuals);
+   //Term_p y = VarBankVarAssertAlloc(bank->vars, x->f_code-2, STIndividuals);
+   Term_p x = VarBankGetFreshVar(bank->vars, STIndividuals);
+   Term_p y = VarBankGetFreshVar(bank->vars, STIndividuals);
 	
-	if (pointer == NULL)
-	{
-		printf("\nNULL pointer\n");
-	}
+   TFormula_p ziny0 = TFormulaFCodeAlloc(bank, member, z, y);
+	TFormula_p zinx0 = TFormulaFCodeAlloc(bank, member, z, x);
 	
+   Eqn_p ziny1 = EqnAlloc(ziny0, bank->true_term, bank, true);
+	Eqn_p zinx1 = EqnAlloc(zinx0, bank->true_term, bank, true);
+	
+	TFormula_p ziny2 = TFormulaLitAlloc(ziny1);
+	TFormula_p zinx2 = TFormulaLitAlloc(zinx1);
+
+	TFormula_p scheme = TFormulaFCodeAlloc(bank, bank->sig->and_code, zinx2, input);
+	scheme = TFormulaFCodeAlloc(bank, bank->sig->equiv_code, ziny2, scheme);
+	scheme = TFormulaAddQuantor(bank, scheme, true, z);
+	scheme = TFormulaAddQuantor(bank, scheme, false, y);
+	scheme = TFormulaAddQuantor(bank, scheme, true, x);
+	
+   EqnFree(ziny1);
+	EqnFree(zinx1);
+	
+	return scheme;
+	
+	/*
 	TFormula_p freevariable = (TFormula_p) pointer;
+   
+   TermPrint(GlobalOut, freevariable, bank->sig, DEREF_NEVER);
+   fprintf(GlobalOut, "\n%ld  %d\n", freevariable->f_code, freevariable->sort);
 	
 	TFormula_p a = VarBankGetFreshVar(state->freshvars,freevariable->sort);
 	TFormula_p b = VarBankGetFreshVar(state->freshvars,freevariable->sort);
@@ -181,6 +204,7 @@ TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p* freeva
 	EqnFree(xinb_eq);
 	
 	return input;
+   */
 }
 
 ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input, Clause_p clause)

@@ -6,8 +6,9 @@
 #cnf(c0,negated_conjecture,(phi(X)|block(Y))).
 #cnf(c1,negated_conjecture,(~block(Y))).
 
-cnf(c0,negated_conjecture,(phi(X)|block(a))).
+cnf(c0,negated_conjecture,(phi(X)|~chi(X)|block(a))).
 cnf(c1,negated_conjecture,(~block(a))).
+cnf(c2,negated_conjecture,(member(a,b))).
 
 #cnf(c11,negated_conjecture, (member(a,X)|phi(X))).
 #cnf(c12,negated_conjecture, (~member(a,X)|phi(X))).
