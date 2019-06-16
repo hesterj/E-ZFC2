@@ -144,7 +144,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 	clauseasformula = TFormulaClauseEncode(bank, clausecopy);
 	TFormulaCollectFreeVars(bank, clauseasformula, freevars);
 	numfreevars = PTreeNodes(freevars);
-	
+	/*
 	if (numfreevars == 2)  //Comprehension
 	{
 		schemaformula = tformula_comprehension(bank, state, freevars, clauseasformula);
@@ -163,7 +163,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful comprehension\n");
 	}
-	
+	*/
 	/*
 	else if (numfreevars == 3) // Replacement
 	{
@@ -192,10 +192,12 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 
 //  Compute comprehension instance for TFormula_p with ONE free variable
 
-TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevars, TFormula_p input)
+TFormula_p tformula_comprehension(ProofState_p state, PStack_p freevars, PStackPointer position, TFormula_p input)
 {
-	void* pointer = PTreeExtractRootKey(freevars);
-	//FunCode member = SigFindFCode(state->signature, "member");
+	//void* pointer = PTreeExtractRootKey(freevars);
+	void* pointer = PStackElementP(freevars,position);
+	TB_p bank = state->terms;
+	//FunCode member = SigFindFCode(state->signature, "member"); // TPTP
 	FunCode member = SigFindFCode(state->signature, "r2_hidden"); // mizar
 	//TFormula_p new = TFormulaCopy(bank,input);
 	
@@ -223,6 +225,13 @@ TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p freevar
 	input = TFormulaAddQuantor(bank,input,true,freevariable);
 	input = TFormulaAddQuantor(bank,input,false,b);
 	input = TFormulaAddQuantor(bank,input,true,a);
+	
+	for (PStackPointer i=0; i<PStackGetSP(freevars); i++)  // Universally quantify over the parameters of the formula
+	{
+		if (i == position) continue;
+		Term_p v_i = (Term_p) PStackElementP(freevars,i);
+		input = TFormulaAddQuantor(bank,input,true,v_i);
+	}
 	
 	EqnFree(xina_eq);
 	EqnFree(xinb_eq);
@@ -800,14 +809,14 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
 {
 	//generate new schema instances and add to tmp_store
    //printf("\nSchema mode!!!\n");
-   
+   /*
    state->paramod_count += compute_schemas_tform(control,
 										state->terms,
 										control->ocb,
 										clause,
 										state->tmp_store, state->freshvars,
 										state);
-   
+   */
    
    /*
    if (GetTotalCPUTime()>3000000)

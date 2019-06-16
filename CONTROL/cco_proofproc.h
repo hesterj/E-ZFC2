@@ -84,10 +84,7 @@ long compute_schemas_tform(ProofControl_p control,
 						   ClauseSet_p store, 
 						   VarBank_p freshvars, 
 						   ProofState_p state);
-TFormula_p tformula_comprehension(TB_p bank, 
-								  ProofState_p state, 
-								  PTree_p freevars, 
-								  TFormula_p input);
+TFormula_p tformula_comprehension(ProofState_p state, PStack_p freevars, PStackPointer position, TFormula_p input);
 ClauseSet_p tformula_replacement(TB_p bank, 
 								ProofState_p state, 
 								PTree_p freevars, 
