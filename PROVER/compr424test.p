@@ -1,0 +1,1 @@
+fof(e1_19_1_1__setfam_1, conjecture, ?[X1]:![X2]:(r2_hidden(X2,X1)<=>(r2_hidden(X2,k1_zfmisc_1(k2_xboole_0(k3_tarski(esk1_0),k3_tarski(esk2_0))))&?[X3]:(X2=X3&?[X4, X5]:(r2_hidden(X4,esk1_0)&(r2_hidden(X5,esk2_0)&X3=k2_xboole_0(X4,X5)))))), file('setfam_1/setfam_1__363_8', e1_19_1_1__setfam_1)).

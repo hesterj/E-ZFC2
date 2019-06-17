@@ -44,8 +44,287 @@ PERF_CTR_DEFINE(BWRWTimer);
 bool TermIsPredicate(Term_p term);
 bool SubformulaCandidateCheck(Sig_p sig, Term_p term);
 TermIsBooleanSymbol(Sig_p sig, Term_p term);
+int LabelFunctionSymbols(ProofState_p control, Term_p term,PStack_p function_symbols);
+bool PStackFindInt(PStack_p res, FunCode handle);
+PStack_p PStackRemoveDuplicatesInt(PStack_p handle);
+PStack_p PStackRemoveDuplicatesTerm(PStack_p handle);
+bool PStackFindTerm(PStack_p res, Term_p handle);
+long CollectSubterms(ProofState_p proofstate, Term_p term, PStack_p collector, PStack_p function_symbols);
+PStack_p FormulaSetLabelFunctionSymbols(ProofState_p control, FormulaSet_p set);
+PStack_p FormulaSetCollectSubterms(ProofState_p control, FormulaSet_p set);
+
 
 // Functions below
+
+bool PStackFindTerm(PStack_p res, Term_p handle)
+{
+   PStackPointer i;
+
+   for(i=0; i<PStackGetSP(res); i++)
+   {
+      if (TermStructEqual(PStackElementP(res,i),handle))
+      {
+		  return true;
+	  }
+   }
+   return false;
+}
+
+PStack_p PStackRemoveDuplicatesTerm(PStack_p handle)
+{
+	PStackPointer i;
+	PStack_p res = PStackAlloc();
+	for(i=0; i<PStackGetSP(handle); i++)
+	{
+		if (!PStackFindTerm(res,PStackElementP(handle,i)))
+		{
+			PStackPushP(res,PStackElementP(handle,i));
+		}
+	}
+	return res;
+}
+
+// returns the subterms of formulas in set
+
+PStack_p FormulaSetCollectSubterms(ProofState_p control, FormulaSet_p set)
+{
+	PStack_p collector = PStackAlloc();
+	WFormula_p handle = set->anchor->succ;
+	PStack_p function_symbols = FormulaSetLabelFunctionSymbols(control,set);
+	while (handle != set->anchor)
+	{
+		//WFormula_p copy = WFormulaFlatCopy(handle);
+		CollectSubterms(control,handle->tformula,collector,function_symbols);
+		//WFormulaFree(copy);
+		handle = handle->succ;
+	}
+	//PStackFree(function_symbols);
+	PStack_p res = PStackRemoveDuplicatesTerm(collector);
+	PStackFree(function_symbols);
+	PStackEmpty(collector);
+	PStackFree(collector);
+	return res;
+}
+
+//Labels the function symbols occuring in set, returns the stack of f_codes
+
+PStack_p FormulaSetLabelFunctionSymbols(ProofState_p control, FormulaSet_p set)
+{
+	WFormula_p handle = set->anchor->succ;
+	PStack_p function_symbols = PStackAlloc();
+	while (handle != set->anchor)
+	{
+		LabelFunctionSymbols(control,handle->tformula,function_symbols);
+		handle = handle->succ;
+	}
+	PStack_p res = PStackRemoveDuplicatesInt(function_symbols);
+	
+	PStackEmpty(function_symbols);
+	PStackFree(function_symbols);
+	return res;
+}
+
+PStack_p PStackRemoveDuplicatesInt(PStack_p handle)
+{
+	PStackPointer i;
+	PStack_p res = PStackAlloc();
+	for(i=0; i<PStackGetSP(handle); i++)
+	{
+		if (!PStackFindInt(res,PStackElementInt(handle,i)))
+		{
+			PStackPushInt(res,PStackElementInt(handle,i));
+		}
+	}
+	//PStackFree(handle);
+	return res;
+}
+
+//collects the subterms of term recursively, by looking for the function symbols in the stack fsymbols
+
+long CollectSubterms(ProofState_p proofstate, Term_p term, PStack_p collector, PStack_p function_symbols)
+{
+	
+	long res = 0;
+	if (!term) return 0;
+	if (term->f_code > 0)
+	{
+		if (PStackFindInt(function_symbols,term->f_code))
+		{
+			res += 1;
+			PStackPushP(collector,term);
+		}
+		if (term->f_code != SIG_TRUE_CODE)
+		{
+			for (int i=0; i<term->arity;i++)
+			{
+				//printf("\nchild %d of %d. f_code: %d\n", i,term->arity - 1, term->args[i]->f_code);
+				//TermPrint(GlobalOut,term->args[i],proofstate->signature,DEREF_NEVER);
+				//printf("\n has parent\n");
+				//TermPrint(GlobalOut,term,proofstate->signature,DEREF_NEVER);
+				//printf("\n");
+				
+				res += CollectSubterms(proofstate,term->args[i],collector,function_symbols);
+			}
+			//printf("_______\n");
+		}
+	}
+	else
+	{
+		res += 1;
+		PStackPushP(collector,term);
+	}
+	return res;
+}
+
+//  returns true if handle is an element of res, only use this method if res is a stack consisting only of ints
+
+bool PStackFindInt(PStack_p res, FunCode handle)
+{
+   PStackPointer i;
+
+   for(i=0; i<PStackGetSP(res); i++)
+   {
+      if (PStackElementInt(res,i) == handle)
+      {
+		  return true;
+	  }
+   }
+   return false;
+}
+
+int LabelFunctionSymbols(ProofState_p control, Term_p term, PStack_p function_symbols)
+{
+	Sig_p sig = control->signature;
+
+	if (term->arity == 2 && ((term->args[0]->f_code == SIG_TRUE_CODE)
+				|| (term->args[1]->f_code == SIG_TRUE_CODE)
+				|| (term->args[0]->f_code == SIG_FALSE_CODE)
+				|| (term->args[1]->f_code == SIG_FALSE_CODE)))
+	{
+		//printf("\nfound a predicate\n");
+		//PStackPushInt(control->predicates,term->args[0]->f_code);
+		for (int i=0; i<term->args[0]->arity; i++)
+		{
+			if (term->args[0]->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[0]->args[i],function_symbols);
+			}
+		}
+	}
+	else if (term->f_code == sig->eqn_code || term->f_code == sig->neqn_code)
+	{
+		//printf("\nfound equality\n");
+		//PStackPushInt(control->predicates,term->f_code);
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	else if ((term->f_code == sig->not_code) || (term->f_code == sig->or_code)
+											 || (term->f_code == sig->qall_code)
+											 || (term->f_code == sig->qex_code)
+											 || (term->f_code == sig->impl_code)
+											 || (term->f_code == sig->equiv_code)
+											 || (term->f_code == sig->and_code)
+											 || (term->f_code == sig->bimpl_code))
+	{
+		//printf("\nfound a boolean\n");
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	else if (term->arity >= 0)
+	{
+		//printf("\nfound a function symbol\n");
+		PStackPushInt(function_symbols,term->f_code);
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	return 0;
+}
+
+// need to actually generalize now
+
+FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int iterations)
+{
+	FormulaSet_p generalizations = FormulaSetAlloc();
+	Sig_p sig = proofstate->signature;
+	TB_p bank = proofstate->terms;
+	//PStack_p subterms = PStackAlloc();
+	//PStack_p fsymbols = PStackAlloc();
+	WFormula_p handle = input->anchor->succ;
+	
+	PStack_p subterms = FormulaSetCollectSubterms(proofstate, input);
+	/*
+	printf("\n");
+	
+	for (PStackPointer i = 0; i<PStackGetSP(subterms); i++)
+	{
+		TermPrint(GlobalOut,PStackElementP(subterms,i),sig,DEREF_NEVER);
+		printf("\n");
+	}
+	*/
+	
+	FormulaSetInsertSet(generalizations,input);
+	return generalizations;
+}
+
+FormulaSet_p GenerateComprehensionInstances(ProofState_p proofstate, FormulaSet_p subformulas)
+{
+   TFormula_p term_encoded_subformula;
+   FormulaSet_p comprehension_instances = FormulaSetAlloc();
+   TFormula_p term_encoded_schema_instance;
+   WFormula_p schema_formula;
+   WFormula_p handle = subformulas->anchor->succ;
+   int i = 0;
+   while (handle != subformulas->anchor)
+   {
+	   PStack_p free_variables_stack = PStackAlloc();
+	   term_encoded_subformula = handle->tformula;
+	   //printf("\n%d\n",i);
+	   VarSet_p free_variables_set = tform_compute_freevars(proofstate->terms,term_encoded_subformula);
+	   int free_variable_count = PTreeNodes(free_variables_set->vars);
+	   PTree_p free_variables = free_variables_set->vars;
+	   PTreeToPStack(free_variables_stack,free_variables);
+	   /*
+	   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
+	   {
+		   TermPrint(GlobalOut,PStackElementP(free_variables_stack,i),proofstate->signature,DEREF_NEVER);
+		   printf("\n");
+	   }
+	   */
+	   if (free_variable_count > 0)
+	   {
+		   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
+		   {
+			   TFormula_p subformula_copy = TFormulaCopy(proofstate->terms, term_encoded_subformula);
+			   term_encoded_schema_instance = tformula_comprehension(proofstate,free_variables_stack,i,subformula_copy);
+			   schema_formula = WTFormulaAlloc(proofstate->terms,term_encoded_schema_instance);
+			   //printf("\n");
+			   //WFormulaPrint(GlobalOut,schema_formula,true);
+			   FormulaSetInsert(comprehension_instances,schema_formula);
+		   }
+       }
+	   
+	   i++;
+	   //VarSetFree(free_variables_set);
+	   PStackFree(free_variables_stack);
+	   handle = handle->succ;
+   }
+   return comprehension_instances;
+}
 
 bool TermIsPredicate(Term_p term)
 {

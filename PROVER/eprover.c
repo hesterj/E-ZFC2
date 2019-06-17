@@ -411,56 +411,23 @@ int main(int argc, char* argv[])
    */
    // Comprehension on subterms
    
-   printf("\n%ld\n",proofstate->f_axioms->members);
-   printf("\n%ld\n",proofstate->f_ax_archive->members);
    FormulaSet_p subformulas = FormulaSetAlloc();
-   long subformulas_count = FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   FormulaSetPrint(GlobalOut,subformulas,true);
-   printf("\n%ld %ld\n",subformulas->members,subformulas_count);
+   FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+   FormulaSet_p subformulas_and_generalizations = GeneralizeFormulas(proofstate,subformulas,true);
+   FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas_and_generalizations);
+  
+   FormulaSetPrint(GlobalOut,comprehension_instances,true);
+   //printf("\n______________\n");
    
-   TFormula_p term_encoded_subformula;
-   TFormula_p term_encoded_schema_instance;
-   WFormula_p schema_formula;
-   WFormula_p handle = subformulas->anchor->succ;
-   int i = 0;
-   while (handle != subformulas->anchor)
-   {
-	   PStack_p free_variables_stack = PStackAlloc();
-	   term_encoded_subformula = TFormulaCopy(proofstate->terms, handle->tformula);
-	   printf("\n%d\n",i);
-	   VarSet_p free_variables_set = tform_compute_freevars(proofstate->terms,term_encoded_subformula);
-	   int free_variable_count = PTreeNodes(free_variables_set->vars);
-	   PTree_p free_variables = free_variables_set->vars;
-	   PTreeToPStack(free_variables_stack,free_variables);
-	   
-	   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
-	   {
-		   TermPrint(GlobalOut,PStackElementP(free_variables_stack,i),proofstate->signature,DEREF_NEVER);
-		   printf("\n");
-	   }
-	   
-	   if (free_variable_count > 0)
-	   {
-		   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
-		   {
-			   term_encoded_schema_instance = tformula_comprehension(proofstate,free_variables_stack,i,term_encoded_subformula);
-			   schema_formula = WTFormulaAlloc(proofstate->terms,term_encoded_schema_instance);
-			   printf("\n");
-			   WFormulaPrint(GlobalOut,schema_formula,true);
-			   FormulaSetInsert(proofstate->f_axioms,schema_formula);
-		   }
-       }
-	   
-	   i++;
-	   //VarSetFree(free_variables_set);
-	   PStackFree(free_variables_stack);
-	   handle = handle->succ;
-   }
-   
+   FormulaSetInsertSet(proofstate->f_axioms,comprehension_instances);
+   FormulaSetFree(comprehension_instances);
+   FormulaSetFree(subformulas);
+   FormulaSetFree(subformulas_and_generalizations);
    /*
    */
    //exit(0);
    //
+   printf("\n\nFINISHED GENERATING COMPREHENSION INSTANCES\n");
    
    if(strategy_scheduling)
    {

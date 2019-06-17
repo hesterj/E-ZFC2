@@ -91,6 +91,8 @@ ClauseSet_p tformula_replacement(TB_p bank,
 								TFormula_p input,
 								Clause_p clause);
 Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
+FormulaSet_p GenerateComprehensionInstances(ProofState_p proofstate, FormulaSet_p input);
+FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int iterations);
 
 long TFormulaCollectSubformulas(ProofState_p state, TFormula_p input, FormulaSet_p collector);
 long WFormulaCollectSubformulas(ProofState_p state, WFormula_p input, FormulaSet_p collector);
