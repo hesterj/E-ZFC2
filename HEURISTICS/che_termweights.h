@@ -44,7 +44,7 @@ typedef enum
 /*---------------------------------------------------------------------*/
 
 #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
-#define TERM_MAX_GENS 1000
+#define TERM_MAX_GENS 10
 
 PStack_p ComputeSubtermsGeneralizations(Term_p term, VarBank_p vars);
 PStack_p ComputeTopGeneralizations(

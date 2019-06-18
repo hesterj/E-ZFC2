@@ -412,14 +412,48 @@ int main(int argc, char* argv[])
 
    relevancy_pruned += ProofStateSinE(proofstate, sine);
    relevancy_pruned += ProofStatePreprocess(proofstate, relevance_prune_level);
+   /////////////////////////////////////////////////////////////////////////////////////////
+   
    /*
    */  //Create comprehension instances corresponding to subformulas of axioms
+   // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
+   // based on the stack of possible generalizations of terms we find with this method...
+   /*
+   printf("INITIAL AXIOMS:\n");
+   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   printf("\n");
+   
+   PStack_p subgens = ComputeSubtermsGeneralizations(proofstate->f_axioms->anchor->succ->tformula,
+													 proofstate->terms->vars);
+   for (PStackPointer i = 0; i<PStackGetSP(subgens); i++)
+   {
+	   Term_p current = (Term_p) PStackElementP(subgens,i);
+	   printf("\nGEN: %s %d %d\n",SigFindName(proofstate->signature, current->f_code),current->f_code,current->arity);
+	   
+	   if (TermStructEqual(current, proofstate->terms->true_term)) continue;
+	   
+	   TermPrint(GlobalOut,current, proofstate->signature, DEREF_NEVER);
+	   printf("\ntformula:\n");
+	   
+	   Eqn_p masked_eqn = EqnAlloc(current, proofstate->terms->true_term, proofstate->terms, true);
+	   printf("eqnalloced\n");
+	   TFormula_p masked = TFormulaLitAlloc(masked_eqn);
+	   
+	   printf("wformula\n");
+	   WFormula_p generalization_f = WTFormulaAlloc(proofstate->terms,masked);
+	   WFormulaPrint(GlobalOut,generalization_f,true);
+   }
+   exit(0);
+   printf("AXIOMS:\n");
+   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   FreeGeneralizations(subgens);
+   */
    
    FormulaSet_p subformulas = FormulaSetAlloc();
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
    FormulaSet_p subformulas_and_generalizations = GeneralizeFormulas(proofstate,subformulas,true);
    FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas_and_generalizations);
-  
+   //FreeGeneralizations(subgens);
    //FormulaSetPrint(GlobalOut,comprehension_instances,true);
    //printf("\n______________\n");
    
@@ -427,7 +461,7 @@ int main(int argc, char* argv[])
    FormulaSetFree(comprehension_instances);
    FormulaSetFree(subformulas);
    FormulaSetFree(subformulas_and_generalizations);
-   
+   /////////////////////////////////////////////////////////////////////////////////////
    /*
    */
    if(strategy_scheduling)

@@ -156,10 +156,15 @@ static Term_p tb_termtop_insert(TB_p bank, Term_p t)
       t->v_count = 0;
       t->f_count = 1;
       t->weight = DEFAULT_FWEIGHT;
+      
+      //printf("\nsigfindname: %s arity: %d\n",SigFindName(bank->sig,t->f_code),t->arity); //
       for(int i=0; i<t->arity; i++)
       {
+		 //if (t->arity > 1) TermPrint(GlobalOut,t->args[1],bank->sig,DEREF_NEVER);
+		 //printf("\n");
+		 //TermPrint(GlobalOut,t->args[0],bank->sig,DEREF_NEVER); // 
          assert(TermIsShared(t->args[i])||TermIsVar(t->args[i]));
-         if(TermIsVar(t->args[i]))
+         if(TermIsVar(t->args[i]))  // true code is an int, not a term with args, need to use true term instead
          {
             t->v_count += 1;
             t->weight  += DEFAULT_VWEIGHT;

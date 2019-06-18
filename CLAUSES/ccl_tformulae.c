@@ -695,7 +695,6 @@ void tformula_print_or_chain(FILE* out, TB_p bank, TFormula_p form,
 void TFormulaTPTPPrint(FILE* out, TB_p bank, TFormula_p form, bool fullterms, bool pcl)
 {
    assert(form);
-
    if(TFormulaIsLiteral(bank->sig, form))
    {
       Eqn_p tmp;
@@ -758,6 +757,9 @@ void TFormulaTPTPPrint(FILE* out, TB_p bank, TFormula_p form, bool fullterms, bo
       }
       else
       {
+		 //printf("\n->%d\n",form->f_code); 
+		 //printf("%d\n",form->args[0]->f_code);
+		 //TermPrint(GlobalOut,form->args[0],bank->sig,DEREF_NEVER);
          TFormulaTPTPPrint(out, bank, form->args[0], fullterms, pcl);
          if(form->f_code == bank->sig->and_code)
          {
