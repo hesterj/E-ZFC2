@@ -35,27 +35,373 @@ PERF_CTR_DEFINE(BWRWTimer);
 /*                      Forward Declarations                           */
 /*---------------------------------------------------------------------*/
 
-void eval_clause_set_given(ProofState_p state, ProofControl_p control, ClauseSet_p set);
-long compute_schemas_tform(ProofControl_p control, 
-						   TB_p bank, 
-						   OCB_p ocb, 
-						   Clause_p clause,
-						   ClauseSet_p store, 
-						   VarBank_p freshvars, 
-						   ProofState_p state);
-TFormula_p tformula_comprehension(TB_p bank, 
-								  ProofState_p state, 
-								  PTree_p* freevars, 
-								  TFormula_p input);
-ClauseSet_p tformula_replacement(TB_p bank, 
-								ProofState_p state, 
-								PTree_p* freevars, 
-								TFormula_p input,
-								Clause_p clause);
-Clause_p ClauseMergeVars(Clause_p clause,  TB_p bank, Term_p x, Term_p y);
+
 /*  John's Functions
  * 
 */
+
+bool PStackFindTerm(PStack_p res, Term_p handle)
+{
+   PStackPointer i;
+
+   for(i=0; i<PStackGetSP(res); i++)
+   {
+      if (TermStructEqual(PStackElementP(res,i),handle))
+      {
+		  return true;
+	  }
+   }
+   return false;
+}
+
+PStack_p PStackRemoveDuplicatesTerm(PStack_p handle)
+{
+	PStackPointer i;
+	PStack_p res = PStackAlloc();
+	for(i=0; i<PStackGetSP(handle); i++)
+	{
+		if (!PStackFindTerm(res,PStackElementP(handle,i)))
+		{
+			PStackPushP(res,PStackElementP(handle,i));
+		}
+	}
+	return res;
+}
+
+// returns the subterms of formulas in set
+
+PStack_p FormulaSetCollectSubterms(ProofState_p control, FormulaSet_p set)
+{
+	PStack_p collector = PStackAlloc();
+	WFormula_p handle = set->anchor->succ;
+	PStack_p function_symbols = FormulaSetLabelFunctionSymbols(control,set);
+	while (handle != set->anchor)
+	{
+		//WFormula_p copy = WFormulaFlatCopy(handle);
+		CollectSubterms(control,handle->tformula,collector,function_symbols);
+		//WFormulaFree(copy);
+		handle = handle->succ;
+	}
+	//PStackFree(function_symbols);
+	PStack_p res = PStackRemoveDuplicatesTerm(collector);
+	PStackFree(function_symbols);
+	PStackEmpty(collector);
+	PStackFree(collector);
+	return res;
+}
+
+//Labels the function symbols occuring in set, returns the stack of f_codes
+
+PStack_p FormulaSetLabelFunctionSymbols(ProofState_p control, FormulaSet_p set)
+{
+	WFormula_p handle = set->anchor->succ;
+	PStack_p function_symbols = PStackAlloc();
+	while (handle != set->anchor)
+	{
+		LabelFunctionSymbols(control,handle->tformula,function_symbols);
+		handle = handle->succ;
+	}
+	PStack_p res = PStackRemoveDuplicatesInt(function_symbols);
+	
+	PStackEmpty(function_symbols);
+	PStackFree(function_symbols);
+	return res;
+}
+
+PStack_p PStackRemoveDuplicatesInt(PStack_p handle)
+{
+	PStackPointer i;
+	PStack_p res = PStackAlloc();
+	for(i=0; i<PStackGetSP(handle); i++)
+	{
+		if (!PStackFindInt(res,PStackElementInt(handle,i)))
+		{
+			PStackPushInt(res,PStackElementInt(handle,i));
+		}
+	}
+	//PStackFree(handle);
+	return res;
+}
+
+
+/*
+ *  collects the subterms of term recursively, by looking for the function symbols in the stack fsymbols
+ *  This function returns the MINIMAL f_code- this allows us to use variables that do not occur in the formula without getting 
+ *  crazy fresh variables.
+*/
+
+long CollectSubterms(ProofState_p proofstate, Term_p term, PStack_p collector, PStack_p function_symbols)
+{
+	
+	long res = 0;
+	if (!term) return 0;
+	if (term->f_code > 0)
+	{
+		if (PStackFindInt(function_symbols,term->f_code))
+		{
+			res += 1;
+			PStackPushP(collector,term);
+		}
+		if (term->f_code != SIG_TRUE_CODE)
+		{
+			for (int i=0; i<term->arity;i++)
+			{
+				CollectSubterms(proofstate,term->args[i],collector,function_symbols);
+			}
+		}
+	}
+	else
+	{
+		res += 1;
+		PStackPushP(collector,term);
+	}
+	return res;
+}
+
+//  returns true if handle is an element of res, only use this method if res is a stack consisting only of ints
+
+bool PStackFindInt(PStack_p res, FunCode handle)
+{
+   PStackPointer i;
+
+   for(i=0; i<PStackGetSP(res); i++)
+   {
+      if (PStackElementInt(res,i) == handle)
+      {
+		  return true;
+	  }
+   }
+   return false;
+}
+
+int LabelFunctionSymbols(ProofState_p control, Term_p term, PStack_p function_symbols)
+{
+	Sig_p sig = control->signature;
+
+	if (term->arity == 2 && ((term->args[0]->f_code == SIG_TRUE_CODE)
+				|| (term->args[1]->f_code == SIG_TRUE_CODE)
+				|| (term->args[0]->f_code == SIG_FALSE_CODE)
+				|| (term->args[1]->f_code == SIG_FALSE_CODE)))
+	{
+		//printf("\nfound a predicate\n");
+		//PStackPushInt(control->predicates,term->args[0]->f_code);
+		for (int i=0; i<term->args[0]->arity; i++)
+		{
+			if (term->args[0]->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[0]->args[i],function_symbols);
+			}
+		}
+	}
+	else if (term->f_code == sig->eqn_code || term->f_code == sig->neqn_code)
+	{
+		//printf("\nfound equality\n");
+		//PStackPushInt(control->predicates,term->f_code);
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	else if ((term->f_code == sig->not_code) || (term->f_code == sig->or_code)
+											 || (term->f_code == sig->qall_code)
+											 || (term->f_code == sig->qex_code)
+											 || (term->f_code == sig->impl_code)
+											 || (term->f_code == sig->equiv_code)
+											 || (term->f_code == sig->and_code)
+											 || (term->f_code == sig->bimpl_code))
+	{
+		//printf("\nfound a boolean\n");
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	else if (term->arity >= 0)
+	{
+		//printf("\nfound a function symbol\n");
+		PStackPushInt(function_symbols,term->f_code);
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				LabelFunctionSymbols(control,term->args[i],function_symbols);
+			}
+		}
+	}
+	return 0;
+}
+
+// need to actually generalize now
+
+FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int iterations)
+{
+	FormulaSet_p generalizations = FormulaSetAlloc();
+	Sig_p sig = proofstate->signature;
+	TB_p bank = proofstate->terms;
+	//PStack_p subterms = PStackAlloc();
+	//PStack_p fsymbols = PStackAlloc();
+	WFormula_p handle = input->anchor->succ;
+	
+	PStack_p subterms = FormulaSetCollectSubterms(proofstate, input);
+	/*
+	printf("\n");
+	
+	for (PStackPointer i = 0; i<PStackGetSP(subterms); i++)
+	{
+		TermPrint(GlobalOut,PStackElementP(subterms,i),sig,DEREF_NEVER);
+		printf("\n");
+	}
+	*/
+	
+	FormulaSetInsertSet(generalizations,input);
+	return generalizations;
+}
+
+FormulaSet_p GenerateComprehensionInstances(ProofState_p proofstate, FormulaSet_p subformulas)
+{
+   TFormula_p term_encoded_subformula;
+   FormulaSet_p comprehension_instances = FormulaSetAlloc();
+   TFormula_p term_encoded_schema_instance;
+   WFormula_p schema_formula;
+   WFormula_p handle = subformulas->anchor->succ;
+   //ClauseSet_p final = ClauseSetAlloc();
+   Clause_p tobeevaluated;
+   while (handle != subformulas->anchor)
+   {
+	   PStack_p free_variables_stack = PStackAlloc();
+	   term_encoded_subformula = handle->tformula;
+	   VarSet_p free_variables_set = tform_compute_freevars(proofstate->terms,term_encoded_subformula);
+	   int free_variable_count = PTreeNodes(free_variables_set->vars);
+	   PTree_p free_variables = free_variables_set->vars;
+	   PTreeToPStack(free_variables_stack,free_variables);
+	   /*
+	   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
+	   {
+		   TermPrint(GlobalOut,PStackElementP(free_variables_stack,i),proofstate->signature,DEREF_NEVER);
+		   printf("\n");
+	   }
+	   */
+	   if (free_variable_count > 0)
+	   {
+		   for (PStackPointer i=0;i<PStackGetSP(free_variables_stack);i++)
+		   {
+			   TFormula_p subformula_copy = TFormulaCopy(proofstate->terms, term_encoded_subformula);
+			   term_encoded_schema_instance = tformula_comprehension2(proofstate,free_variables_stack,i,subformula_copy);
+			   schema_formula = WTFormulaAlloc(proofstate->terms,term_encoded_schema_instance);
+			   FormulaSetProp(schema_formula,CPIsSchema);
+			   /*
+				if (OutputLevel >= 1)
+				{
+					fprintf(GlobalOut,   "COMPREHENSION: term: ");
+					TermPrint(GlobalOut, schema_formula->tformula, proofstate->signature, DEREF_ALWAYS);
+					fprintf(GlobalOut, "\n            formula: ");
+					WFormulaPrint(GlobalOut, schema_formula, true);
+					fprintf(GlobalOut, "\n");
+				}
+				*/
+				/*
+				long res = WFormulaCNF(schema_formula,final,proofstate->terms,proofstate->terms->vars);
+				printf("\nC clauses: %ld\n",res);
+				while ((tobeevaluated = ClauseSetExtractFirst(final)))
+				{
+					printf("\n@ ");
+					ClausePrint(GlobalOut,tobeevaluated,true);
+					ClauseSetProp(tobeevaluated, CPIsSchema);
+					ClauseSetIndexedInsertClause(proofstate->axioms, tobeevaluated);
+					//HCBClauseEvaluate(control->hcb, tobeevaluated);
+				}
+				WFormulaCellFree(schema_formula);
+				printf("\n");
+				printf("\nSuccessful comprehension\n");
+				*/
+				FormulaSetInsert(comprehension_instances,schema_formula);
+			}
+       }
+	   //VarSetFree(free_variables_set);
+	   PStackFree(free_variables_stack);
+	   //ClauseSetFree(final);
+	   handle = handle->succ;
+   }
+   return comprehension_instances;
+}
+
+bool TermIsPredicate(Term_p term)
+{
+	bool check = (term->arity == 2 && ((term->args[0]->f_code == SIG_TRUE_CODE)
+				|| (term->args[1]->f_code == SIG_TRUE_CODE)));
+	return check;
+}
+
+bool TermIsBooleanSymbol(Sig_p sig, Term_p term)
+{
+	FunCode fcode = term->f_code;
+	bool check = (fcode == sig->eqn_code || fcode == sig->neqn_code
+				|| (fcode == sig->not_code) || (fcode == sig->or_code)
+											 || (fcode == sig->qall_code)
+											 || (fcode == sig->qex_code)
+											 || (fcode == sig->impl_code)
+											 || (fcode == sig->equiv_code)
+											 || (fcode == sig->and_code)
+											 || (fcode == sig->bimpl_code));
+	return check;
+}
+
+bool SubformulaCandidateCheck(Sig_p sig, Term_p term)
+{
+	bool check = (TermIsPredicate(term) || TermIsBooleanSymbol(sig,term));
+	return check;
+}
+// collect all subformulas of the formulaset, store them in collector then pass them to a formulaset that is return
+
+long FormulaSetCollectSubformulas(ProofState_p state, FormulaSet_p input, FormulaSet_p collector)
+{
+	WFormula_p handle = input->anchor->succ;
+	long subformula_count = 0;
+	while (handle != input->anchor)
+	{
+		subformula_count += WFormulaCollectSubformulas(state,handle,collector);
+		handle = handle->succ;
+	}
+	return subformula_count;
+}
+
+//Wrapper for TFormulaCollectSubformulas
+
+long WFormulaCollectSubformulas(ProofState_p state, WFormula_p input, FormulaSet_p collector)
+{
+	return TFormulaCollectSubformulas(state,input->tformula,collector);
+}
+
+//Collect all the subformulas of the input by looking for "terms" whose top FunCode is a predicate symbol
+//This means that we need to worry about the situation where term encoded predicates are masked by an equality with $true
+
+long TFormulaCollectSubformulas(ProofState_p state, TFormula_p term, FormulaSet_p collector)
+{
+	long subformula_count = 0;
+	WFormula_p handle;
+	Sig_p sig = state->signature;
+	
+	if (SubformulaCandidateCheck(sig,term))
+	{
+		handle = WTFormulaAlloc(state->terms,term);
+		FormulaSetInsert(collector,handle);
+		subformula_count++;
+		for (int i=0; i<term->arity; i++)
+		{
+			if (term->args[i]->arity > 0)
+			{
+				subformula_count += TFormulaCollectSubformulas(state,term->args[i],collector);
+			}
+		}
+	}
+	return subformula_count;
+}
 
 
 
@@ -93,6 +439,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		schemaaswformula = WTFormulaAlloc(bank,schemaformula);
 
       //yan
+      /*
       if (OutputLevel >= 1)
       {
          fprintf(GlobalOut,   "COMPREHENSION: term: ");
@@ -101,6 +448,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
          WFormulaPrint(GlobalOut, schemaaswformula, true);
          fprintf(GlobalOut, "\n");
       }
+      */
       //
 
 		res = WFormulaCNF(schemaaswformula,final,state->terms,/*state->freshvars*/bank->vars);
@@ -109,16 +457,16 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		{
 		  printf("\n@ ");
 		  ClausePrint(GlobalOut,tobeevaluated,true);
-        ClauseSetProp(tobeevaluated, CPIsSchema);
+          ClauseSetProp(tobeevaluated, CPIsSchema);
 		  ClauseSetIndexedInsertClause(state->tmp_store, tobeevaluated);
-		  HCBClauseEvaluate(control->hcb, tobeevaluated);
+		  //HCBClauseEvaluate(control->hcb, tobeevaluated);
 		}
 		WFormulaCellFree(schemaaswformula);
 		printf("\n");
 		printf("\nSuccessful comprehension\n");
 	}
-	
-	else if (numfreevars == 2) // Replacement
+	/*
+	else if (numfreevars == 2) // Replacement  //bugged
 	{
 		
 		final = tformula_replacement(bank,state,&freevars,clauseasformula,clausecopy);
@@ -135,7 +483,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 		//WFormulaCellFree(schemaaswformula);
 		//printf("\nSuccessful replacement\n");
 	}
-
+	*/
 	ClauseSetFree(final);
 	ClauseFree(clausecopy);
 	PTreeFree(freevars);
@@ -207,11 +555,60 @@ TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p* freeva
    */
 }
 
-ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input, Clause_p clause)
+/*  This is a newer comprehension method that allows more than one free variable.  The "selected variable" is the one at position in the freevars stack
+ *  All other free variables are considered to be parameters that are then universally quantified over, as in full comprehension
+ * 
+ * 
+*/
+
+TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStackPointer position, TFormula_p input)
+{
+	//void* pointer = PTreeExtractRootKey(freevars);
+	void* pointer = PStackElementP(freevars,position);
+	TB_p bank = state->terms;
+	//FunCode member = SigFindFCode(state->signature, "member"); // TPTP
+	FunCode member = SigFindFCode(state->signature, "r2_hidden"); // mizar
+	//TFormula_p new = TFormulaCopy(bank,input);
+	
+	TFormula_p freevariable = (TFormula_p) pointer;
+	
+	TFormula_p a = VarBankGetFreshVar(state->freshvars,freevariable->sort);
+	TFormula_p b = VarBankGetFreshVar(state->freshvars,freevariable->sort);
+	//TFormula_p a = VarBankVarAlloc(state->terms->vars
+	
+	TFormula_p xina = TFormulaFCodeAlloc(bank,member,freevariable,a);
+	TFormula_p xinb = TFormulaFCodeAlloc(bank,member,freevariable,b);
+	
+	Eqn_p xina_eq = EqnAlloc(xina,bank->true_term,bank,true);
+	Eqn_p xinb_eq = EqnAlloc(xinb,bank->true_term,bank,true);
+	
+	TFormula_p xina_f = TFormulaLitAlloc(xina_eq);
+	TFormula_p xinb_f = TFormulaLitAlloc(xinb_eq);
+	
+	input = TFormulaFCodeAlloc(bank,bank->sig->and_code,xina_f,input);
+	input = TFormulaFCodeAlloc(bank,bank->sig->equiv_code,xinb_f,input);
+	input = TFormulaAddQuantor(bank,input,true,freevariable);
+	input = TFormulaAddQuantor(bank,input,false,b);
+	input = TFormulaAddQuantor(bank,input,true,a);
+	
+	for (PStackPointer i=0; i<PStackGetSP(freevars); i++)  // Universally quantify over the parameters of the formula
+	{
+		if (i == position) continue;
+		Term_p v_i = (Term_p) PStackElementP(freevars,i);
+		input = TFormulaAddQuantor(bank,input,true,v_i);
+	}
+	
+	EqnFree(xina_eq);
+	EqnFree(xinb_eq);
+	
+	return input;
+}
+
+ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input, Clause_p clause)  //bugged
 {
 	void* pointer0 = PTreeExtractRootKey(freevars);
 	void* pointer1 = PTreeExtractRootKey(freevars);
-	FunCode member = SigFindFCode(state->signature, "member");
+	FunCode member = SigFindFCode(state->signature, "member");  //TPTP only
 	ClauseSet_p final = ClauseSetAlloc();
 	//Subst_p binder = SubstAlloc();
 	
@@ -633,14 +1030,14 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
 {
 	//generate new schema instances and add to tmp_store
    //printf("\nSchema mode!!!\n");
-   
+   /*
    state->paramod_count += compute_schemas_tform(control,
 										state->terms,
 										control->ocb,
 										clause,
 										state->tmp_store, state->freshvars,
 										state);
-
+   */
    if(control->heuristic_parms.enable_eq_factoring)
    {
       state->factor_count+=
@@ -1552,7 +1949,8 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    SysDate          clausedate;
 
    clause = control->hcb->hcb_select(control->hcb,
-                                     state->unprocessed);
+                                     state->unprocessed);                   
+                                     
    //EvalListPrintComment(GlobalOut, clause->evaluations); printf("\n");
    if(OutputLevel==1)
    {

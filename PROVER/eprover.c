@@ -412,7 +412,24 @@ int main(int argc, char* argv[])
 
    relevancy_pruned += ProofStateSinE(proofstate, sine);
    relevancy_pruned += ProofStatePreprocess(proofstate, relevance_prune_level);
-
+   /*
+   */  //Create comprehension instances corresponding to subformulas of axioms
+   
+   FormulaSet_p subformulas = FormulaSetAlloc();
+   FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+   FormulaSet_p subformulas_and_generalizations = GeneralizeFormulas(proofstate,subformulas,true);
+   FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas_and_generalizations);
+  
+   //FormulaSetPrint(GlobalOut,comprehension_instances,true);
+   //printf("\n______________\n");
+   
+   FormulaSetInsertSet(proofstate->f_axioms,comprehension_instances);
+   FormulaSetFree(comprehension_instances);
+   FormulaSetFree(subformulas);
+   FormulaSetFree(subformulas_and_generalizations);
+   
+   /*
+   */
    if(strategy_scheduling)
    {
       ExecuteSchedule(StratSchedule, h_parms, print_rusage);

@@ -847,6 +847,13 @@ long TFormulaToCNF(WFormula_p form, FormulaProperties type, ClauseSet_p set,
       else
       {
          clause = TFormulaCollectClause(handle, terms, fresh_vars);
+         // John
+         if (FormulaQueryProp(form,CPIsSchema))
+         {
+			 //printf("\n\nCNF\ing schema formula\n");
+			 ClauseSetProp(clause,CPIsSchema);
+		 }
+		 //
          ClauseSetTPTPType(clause, type);
          DocClauseFromForm(GlobalOut, OutputLevel, clause, form);
          ClausePushDerivation(clause, DCSplitConjunct, form, NULL);

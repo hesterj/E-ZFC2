@@ -652,6 +652,10 @@ Clause_p WFormClauseToClause(WFormula_p form)
 
 void WFormulaPrint(FILE* out, WFormula_p form, bool fullterms)
 {
+   if (FormulaQueryProp(form,CPIsSchema))
+   {
+	   fprintf(out, "/* Schema */\n");
+   }
    if(form->is_clause)
    {
       Clause_p clause = WFormClauseToClause(form);
