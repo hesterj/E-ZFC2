@@ -90,6 +90,8 @@ long compute_schemas_tform(ProofControl_p control,
 						   ClauseSet_p store, 
 						   VarBank_p freshvars, 
 						   ProofState_p state);
+						   
+void FormulaSetCopyFormulas(FormulaSet_p to, FormulaSet_p from); 
 TFormula_p tformula_comprehension(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input); // for clauses
 TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStackPointer position, TFormula_p input);  //for tformula, full comprehension
 ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevars, TFormula_p input, Clause_p clause);  //bugged

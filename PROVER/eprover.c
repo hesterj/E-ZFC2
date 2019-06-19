@@ -422,47 +422,41 @@ int main(int argc, char* argv[])
    printf("INITIAL AXIOMS:\n");
    FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
    printf("\n");
-   
-   FormulaSet_p generalized = GeneralizeFormulas(proofstate,proofstate->f_axioms,2);
-   /*
-   PStack_p subgens = ComputeSubtermsGeneralizations(proofstate->f_axioms->anchor->succ->tformula,
-													 proofstate->terms->vars);
-   for (PStackPointer i = 0; i<PStackGetSP(subgens); i++)
-   {
-	   Term_p current = (Term_p) PStackElementP(subgens,i);
-	   printf("\nGEN: %s %d %d\n",SigFindName(proofstate->signature, current->f_code),current->f_code,current->arity);
-	   
-	   if (TermStructEqual(current, proofstate->terms->true_term)) continue;
-	   
-	   TermPrint(GlobalOut,current, proofstate->signature, DEREF_NEVER);
-	   printf("\ntformula:\n");
-	   
-	   Eqn_p masked_eqn = EqnAlloc(current, proofstate->terms->true_term, proofstate->terms, true);
-	   printf("eqnalloced\n");
-	   TFormula_p masked = TFormulaLitAlloc(masked_eqn);
-	   
-	   printf("wformula\n");
-	   WFormula_p generalization_f = WTFormulaAlloc(proofstate->terms,masked);
-	   WFormulaPrint(GlobalOut,generalization_f,true);
-   }
-   */
-   printf("AXIOMS:\n");
-   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
    //FreeGeneralizations(subgens);
-   exit(0);
-   
+   //exit(0);
    FormulaSet_p subformulas = FormulaSetAlloc();
+   
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   FormulaSet_p subformulas_and_generalizations = GeneralizeFormulas(proofstate,subformulas,true);
-   FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas_and_generalizations);
-   //FreeGeneralizations(subgens);
-   //FormulaSetPrint(GlobalOut,comprehension_instances,true);
-   //printf("\n______________\n");
+   
+   printf("SUBFORMULAS:\n");
+   FormulaSetPrint(GlobalOut,subformulas,true);
+   printf("\n");
+   
+   FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
+   FormulaSetInsertSet(generalizations, subformulas);
+   printf("GENERALIZATIONS AND SUBFORMULAS:\n");
+   FormulaSetPrint(GlobalOut,generalizations,true);
+   printf("\n");
+   FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
+   //FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+   
+   printf("COMPREHENSION INSTANCES:\n");
+   FormulaSetPrint(GlobalOut,comprehension_instances,true);
+   printf("\n");
+   
+   printf("AXIOMS BEFORE ADDING COMP:\n");
+   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   printf("\n");
    
    FormulaSetInsertSet(proofstate->f_axioms,comprehension_instances);
    FormulaSetFree(comprehension_instances);
    FormulaSetFree(subformulas);
-   FormulaSetFree(subformulas_and_generalizations);
+   //FormulaSetFree(subformulas_and_generalizations);
+   
+	printf("AXIOMS AFTER ADDING COMP:\n");
+   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   printf("\n");
+   //exit(0);
    /////////////////////////////////////////////////////////////////////////////////////
    /*
    */

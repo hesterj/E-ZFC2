@@ -149,8 +149,8 @@ PStack_p PStackRemoveDuplicatesInt(PStack_p handle)
 
 /*
  *  collects the subterms of term recursively, by looking for the function symbols in the stack fsymbols
- *  This function returns the MINIMAL f_code- this allows us to use variables that do not occur in the formula without getting 
- *  crazy fresh variables.
+ *  
+ * 
 */
 
 long CollectSubterms(ProofState_p proofstate, Term_p term, PStack_p collector, PStack_p function_symbols)
@@ -273,40 +273,48 @@ FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int
 	
 	while (handle != input->anchor)
 	{
-		PStack_p subterms = FormulaSetCollectSubterms(proofstate, input);
+		PStack_p all_subterms = FormulaSetCollectSubterms(proofstate, input); 
 		
-		printf("\n");
+		//printf("\n");
 		
-		for (PStackPointer i = 0; i<PStackGetSP(subterms); i++)
+		for (PStackPointer i = 0; i<PStackGetSP(all_subterms); i++)
 		{
-			Term_p current = PStackElementP(subterms,i);
+			Term_p current = PStackElementP(all_subterms,i);
+			//if (TermIsVar(current)) continue; // no point in generalizaing variables
+			if (!TermIsSubterm(handle->tformula,current,DEREF_NEVER))
+			{
+				//printf("doesn't occur\n");
+				continue;
+			}
+			//printf("\n current:\n");
 			//TermPrint(GlobalOut,current,sig,DEREF_NEVER);
-			//if (TermIsVar(current)) continue;  // no point in generalizaing variables
 			PStack_p subterm_generalizations = ComputeSubtermsGeneralizations(current, proofstate->terms->vars);
-			//printf("\n_____\n");
-			PrintTermStack(sig,subterm_generalizations);
+			//printf("\n___A___\n");
+			//PrintTermStack(sig,subterm_generalizations);
+			//printf("\n___B___\n");
 			for (PStackPointer j = 0; j<PStackGetSP(subterm_generalizations); j++)
 			{
-				printf("\n\nformula: ");
-				WFormulaPrint(GlobalOut, handle, true);
-				printf("\n");
+				//printf("\n\nformula: "); 
+				//WFormulaPrint(GlobalOut, handle, true);
+				//printf("\n");
 				Term_p generalization_of_current = PStackElementP(subterm_generalizations,j);
-				TermPrint(GlobalOut,current,sig,DEREF_NEVER); 
-				printf(" => "); 
-				TermPrint(GlobalOut,generalization_of_current, sig, DEREF_NEVER);
+				//TermPrint(GlobalOut,current,sig,DEREF_NEVER); 
+				//printf(" => "); 
+				//TermPrint(GlobalOut,generalization_of_current, sig, DEREF_NEVER);
 				TFormula_p replaced = TFormulaMergeVars(handle->tformula,bank,current,generalization_of_current);
-				printf("\n");
-				TFormulaTPTPPrint(GlobalOut,bank,replaced,true,true);
+				//printf("\n");
+				//TFormulaTPTPPrint(GlobalOut,bank,replaced,true,true);
 				WFormula_p generalized_formula = WTFormulaAlloc(bank, replaced);
-				printf("\n");
-				WFormulaPrint(GlobalOut,generalized_formula,true);
-				exit(0);
+				FormulaSetInsert(generalizations,generalized_formula);
+				//printf("\n");
+				//WFormulaPrint(GlobalOut,generalized_formula,true);
+				//exit(0);
 			}
 		}
 		
 		handle = handle->succ;
 	}
-	
+	//exit(0);
 	//FormulaSetInsertSet(generalizations,input);
 	return generalizations;
 }
