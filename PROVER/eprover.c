@@ -418,11 +418,13 @@ int main(int argc, char* argv[])
    */  //Create comprehension instances corresponding to subformulas of axioms
    // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
    // based on the stack of possible generalizations of terms we find with this method...
-   /*
+   
    printf("INITIAL AXIOMS:\n");
    FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
    printf("\n");
    
+   FormulaSet_p generalized = GeneralizeFormulas(proofstate,proofstate->f_axioms,2);
+   /*
    PStack_p subgens = ComputeSubtermsGeneralizations(proofstate->f_axioms->anchor->succ->tformula,
 													 proofstate->terms->vars);
    for (PStackPointer i = 0; i<PStackGetSP(subgens); i++)
@@ -443,11 +445,11 @@ int main(int argc, char* argv[])
 	   WFormula_p generalization_f = WTFormulaAlloc(proofstate->terms,masked);
 	   WFormulaPrint(GlobalOut,generalization_f,true);
    }
-   exit(0);
+   */
    printf("AXIOMS:\n");
    FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   FreeGeneralizations(subgens);
-   */
+   //FreeGeneralizations(subgens);
+   exit(0);
    
    FormulaSet_p subformulas = FormulaSetAlloc();
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
