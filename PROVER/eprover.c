@@ -456,7 +456,7 @@ int main(int argc, char* argv[])
 	printf("AXIOMS AFTER ADDING COMP:\n");
    FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
    printf("\n");
-   //exit(0);
+   exit(0);
    /////////////////////////////////////////////////////////////////////////////////////
    /*
    */

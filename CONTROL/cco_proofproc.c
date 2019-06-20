@@ -623,7 +623,20 @@ TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStack
 	void* pointer = PStackElementP(freevars,position);
 	TB_p bank = state->terms;
 	//FunCode member = SigFindFCode(state->signature, "member"); // TPTP
-	FunCode member = SigFindFCode(state->signature, "r2_hidden"); // mizar
+	FunCode member;
+	if (SigFindFCode(state->signature, "r2_hidden"))
+	{
+		member = SigFindFCode(state->signature, "r2_hidden");
+	}
+	else if (SigFindFCode(state->signature, "member"))
+	{
+		member = SigFindFCode(state->signature, "member");
+	}
+	else 
+	{
+		fprintf(GlobalOut, "\nNo known membership symbol, aborting.");
+		exit(0);
+	}
 	//TFormula_p new = TFormulaCopy(bank,input);
 	
 	TFormula_p freevariable = (TFormula_p) pointer;
