@@ -1322,7 +1322,7 @@ void DerivedTSTPPrint(FILE* out, Sig_p sig, Derived_p derived)
       // fprintf(out, "%p: ", derived->clause);
       if (ClauseQueryProp(derived->clause, CPIsSchema))
       {
-		  printf("/* Schema */ ");
+		  printf("#/* Schema */ ");
 	  }
       ClauseTSTPPrint(out, derived->clause, true, false);
       if(derived->clause->derivation)
@@ -1356,7 +1356,7 @@ void DerivedTSTPPrint(FILE* out, Sig_p sig, Derived_p derived)
       assert(derived->formula);
       if (FormulaQueryProp(derived->formula, CPIsSchema))
       {
-		  printf("/* Schema */ ");
+		  printf("#/* Schema */ ");
 	  }
       // fprintf(out, "%p: ", derived->formula);
       WFormulaTSTPPrint(out, derived->formula, true, false);

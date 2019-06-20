@@ -654,7 +654,7 @@ void WFormulaPrint(FILE* out, WFormula_p form, bool fullterms)
 {
    if (FormulaQueryProp(form,CPIsSchema))
    {
-	   fprintf(out, "/* Schema */\n");
+	   fprintf(out, "#/* Schema */\n");
    }
    if(form->is_clause)
    {

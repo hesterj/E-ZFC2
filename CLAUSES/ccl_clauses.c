@@ -1429,7 +1429,7 @@ void ClausePrint(FILE* out, Clause_p clause, bool fullterms)
 
    if(ClauseQueryProp(clause, CPIsSchema))
    {
-	   fprintf(out, "/* Schema */\n");
+	   fprintf(out, "#/* Schema */\n");
    }
 
    if(OutputFormat == TPTPFormat)
