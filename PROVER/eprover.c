@@ -419,18 +419,18 @@ int main(int argc, char* argv[])
    // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
    // based on the stack of possible generalizations of terms we find with this method...
    
-   printf("INITIAL AXIOMS:\n");
-   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   printf("\n");
+   //printf("INITIAL AXIOMS:\n");
+   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   //printf("\n");
    //FreeGeneralizations(subgens);
    //exit(0);
    FormulaSet_p subformulas = FormulaSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
    
-   printf("SUBFORMULAS:\n");
-   FormulaSetPrint(GlobalOut,subformulas,true);
-   printf("\n");
+   //printf("SUBFORMULAS:\n");
+   //FormulaSetPrint(GlobalOut,subformulas,true);
+   //printf("\n");
    
    //FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
    //FormulaSetInsertSet(generalizations, subformulas);
@@ -440,22 +440,22 @@ int main(int argc, char* argv[])
    //FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    
-   printf("COMPREHENSION INSTANCES:\n");
-   FormulaSetPrint(GlobalOut,comprehension_instances,true);
-   printf("\n");
+   //printf("COMPREHENSION INSTANCES:\n");
+   //FormulaSetPrint(GlobalOut,comprehension_instances,true);
+   //printf("\n");
    
-   printf("AXIOMS BEFORE ADDING COMP:\n");
-   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   printf("\n");
+   //printf("AXIOMS BEFORE ADDING COMP:\n");
+   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   //printf("\n");
    
    FormulaSetInsertSet(proofstate->f_axioms,comprehension_instances);
    FormulaSetFree(comprehension_instances);
    FormulaSetFree(subformulas);
    //FormulaSetFree(subformulas_and_generalizations);
    
-	printf("AXIOMS AFTER ADDING COMP:\n");
-   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   printf("\n");
+	//printf("AXIOMS AFTER ADDING COMP:\n");
+   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
+   //printf("\n");
    //exit(0);
    /////////////////////////////////////////////////////////////////////////////////////
    /*

@@ -234,7 +234,7 @@ double EnigmaWeightCompute(void* data, Clause_p clause)
    }
    nodes[i+local->conj_features_count].index = -1;
    int total = i+local->conj_features_count;
-
+  
    // detect proofwatch version
    if (local->enigmap->version & EFProofWatch)
    {

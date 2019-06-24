@@ -45,6 +45,7 @@ typedef enum
    EFProofWatch = 32,
    EFVariables = 64,
    EFHashing = 128,
+   EFComprehension = 256,  // John
    EFAll = 0xFFFF
 }EnigmaFeature;
 

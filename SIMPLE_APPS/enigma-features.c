@@ -209,7 +209,7 @@ static void clause_features_string(DStr_p str, Clause_p clause, Sig_p sig, long*
       PStackFree(mod_stack);
    }
 }
-
+/*
 static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig, long* vars)
 {
    static char fstr[1024];
@@ -257,7 +257,58 @@ static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig, long
       }
    }
 }
+*/
 
+static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig, long* vars)
+{
+   static char fstr[1024];
+
+   if (Enigma & EFLengths) 
+   {
+      snprintf(fstr, 1024, "!LEN/%ld ", vec[0]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!POS/%ld ", vec[1]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!NEG/%ld ", vec[2]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!SCH/%ld ", vec[3]); DStrAppendStr(str, fstr);  // John
+      
+   }
+
+   // if (variable features) ...
+   if (vars && (Enigma & EFVariables))
+   {
+      snprintf(fstr, 1024, "#!COUNT/%ld ", vars[0]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "#!OCCUR/%ld ", vars[1]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "#!UNIQ/%ld ",  vars[2]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "#!SHARE/%ld ", vars[3]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "%%!MAX1/%ld ", vars[4]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "%%!MAX2/%ld ", vars[5]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "%%!MAX3/%ld ", vars[6]); DStrAppendStr(str, fstr);
+   }
+
+   if (!(Enigma & EFSymbols)) 
+   {
+      return;
+   }
+   
+   for (long f=sig->internal_symbols+1; f<=sig->f_count; f++)  //occurences of vec[3] replace with vec[4] for position of !SCH feature
+   {
+      char* fname = SigFindName(sig, f);
+      if ((strlen(fname)>3) && ((strncmp(fname, "esk", 3) == 0) || (strncmp(fname, "epred", 5) == 0)))
+      {
+         continue;
+      }
+      if (vec[4+4*f+0] > 0) 
+      {
+         snprintf(fstr, 1024, "#+%s/%ld ", fname, vec[4+4*f+0]); DStrAppendStr(str, fstr);
+         snprintf(fstr, 1024, "%%+%s/%ld ", fname, vec[4+4*f+1]+1); DStrAppendStr(str, fstr);
+      }
+      if (vec[4+4*f+2] > 0) 
+      {
+         snprintf(fstr, 1024, "#-%s/%ld ", fname, vec[4+4*f+2]); DStrAppendStr(str, fstr);
+         snprintf(fstr, 1024, "%%-%s/%ld ", fname, vec[4+4*f+3]+1); DStrAppendStr(str, fstr);
+      }
+   }
+}
+/*
 static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
 {
    static long* vec = NULL;
@@ -308,6 +359,67 @@ static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
    DStrDeleteLastChar(str);
    return str;
 }
+*/
+
+ // Changes made by John to allow another ENIGMA feature for schemas at position 3.
+
+static DStr_p get_conjecture_features_string(char* filename, TB_p bank)  
+{
+   static long* vec = NULL;
+   static size_t size = 0;
+   NumTree_p stat = NULL;
+   long vars[10] = { 0 };
+   int offset = 0;
+
+   if (!vec)
+   {
+      size = (4+4*64)*sizeof(long); // start with memory for 64 symbols
+      vec = RegMemAlloc(size);
+   }
+   vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));
+   for (int i=0; i<4+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }
+
+   DStr_p str = DStrAlloc();
+   Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
+   ScannerSetFormat(in, TSTPFormat);
+   while (TestInpId(in, "cnf"))
+   {
+      Clause_p clause = ClauseParse(in, bank);
+      vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));
+      if (ClauseQueryTPTPType(clause) == CPTypeNegConjecture) 
+      {
+         vec[0] += (long)ClauseWeight(clause,1,1,1,1,1,false);
+         vec[1] += clause->pos_lit_no;
+         vec[2] += clause->neg_lit_no;
+         int schema_clause = 0;
+         if (ClauseQueryProp(clause,CPIsSchema))
+         {
+				schema_clause = 1;
+			}
+			vec[3] += schema_clause;
+         clause_features_string(str, clause, bank->sig, &vec[4]);
+         if (Enigma & EFVariables)
+         {
+            int distinct = 0;
+            FeaturesClauseVariablesExtend(&stat, clause, &distinct, offset);
+            offset += (2 * distinct);
+         }
+      }
+      ClauseFree(clause);
+   }
+   CheckInpTok(in, NoToken);
+   DestroyScanner(in);
+
+   if (Enigma & EFVariables)
+   {
+      FeaturesClauseVariablesStat(&stat, vars);
+      NumTreeFree(stat);
+   }
+   clause_static_features_string(str, vec, bank->sig, vars);
+   DStrDeleteLastChar(str);
+   return str;
+}
+
 
 static NumTree_p get_conjecture_features(char* filename, TB_p bank, Enigmap_p enigmap)
 {

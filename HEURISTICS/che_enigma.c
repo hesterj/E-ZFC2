@@ -113,7 +113,7 @@ static void feature_increase(
       }
       else
       {
-         //Warning("ENIGMA: Unknown feature \"%s\" skipped.", str);
+         Warning("ENIGMA: Unknown feature \"%s\" skipped.", str);  //John
          return;
       }
    }
@@ -284,6 +284,8 @@ Enigmap_p EnigmapLoad(char* features_filename, Sig_p sig)
 {
    Enigmap_p enigmap = EnigmapAlloc();
    long count = 0;
+   
+   printf("features filename: %s\n", features_filename);  //John
 
    enigmap->sig = sig;
    enigmap->feature_map = NULL;
@@ -359,6 +361,7 @@ EnigmaFeatures ParseEnigmaFeaturesSpec(char *spec)
          case 'W': enigma_features |= EFProofWatch; break;
          case 'X': enigma_features |= EFVariables; break;
          case 'h': enigma_features |= EFHashing; break;
+         //case 'Z': enigma_features |= EFComprehension; break; // John
          case '"': break;
          default:
                    Error("Invalid Enigma features specifier '%c'. Valid characters are 'VHSLCWXh'.",
@@ -495,6 +498,13 @@ void FeaturesAddClauseStatic(NumTree_p* counts, Clause_p clause, Enigmap_p enigm
       feature_increase("!LEN", (long)ClauseWeight(clause,1,1,1,1,1,false), counts, enigmap, len);
       feature_increase("!POS", clause->pos_lit_no, counts, enigmap, len);
       feature_increase("!NEG", clause->neg_lit_no, counts, enigmap, len);
+      
+      int clause_is_schema = 0;
+		if (ClauseQueryProp(clause, CPIsSchema)) 
+		{
+			clause_is_schema = 1;
+		}
+		feature_increase("!SCH", clause_is_schema, counts, enigmap, len);
    }
 
    if (enigmap->version & EFSymbols)
@@ -528,6 +538,7 @@ void FeaturesAddClauseStatic(NumTree_p* counts, Clause_p clause, Enigmap_p enigm
 NumTree_p FeaturesClauseCollect(Clause_p clause, Enigmap_p enigmap, int* len)
 {
    NumTree_p counts = NULL;
+
    *len = FeaturesClauseExtend(&counts, clause, enigmap);
    FeaturesAddClauseStatic(&counts, clause, enigmap, len);
    return counts;
