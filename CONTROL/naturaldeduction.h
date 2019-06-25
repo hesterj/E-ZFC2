@@ -64,6 +64,7 @@ WFormula_p NDAndIntroduction(ND_p control, TB_p bank, WFormula_p a, WFormula_p b
 WFormula_p NDOrIntroduction(ND_p control, TB_p bank, WFormula_p a, WFormula_p b);
 WFormula_p NDImplIntroduction(ND_p control,TB_p bank, WFormula_p a, WFormula_p b);
 WFormula_p NDNegIntroduction(ND_p control,TB_p bank, WFormula_p a, WFormula_p b, WFormula_p c);
+//WFormula_p NegIntroductionSimple(TB_p bank, WFormula_p a);
 WFormula_p NDUniversalIntroduction(ND_p control,TB_p bank, Term_p term, Term_p variable, WFormula_p formula);
 WFormula_p NDExistentialIntroduction(ND_p control,TB_p bank, Term_p term, Term_p variable, WFormula_p formula);
 
@@ -119,12 +120,8 @@ void NDResetState(ND_p ndcontrol);
                   
 // inline functions
                   
-static __inline__ bool PStackFindInt(PStack_p res, FunCode handle);
-static __inline__ bool PStackFindTerm(PStack_p res, Term_p handle);
 static __inline__ bool FunCodeIsPredicate(ND_p res, FunCode handle);
 static __inline__ bool FunCodeIsFunction(ND_p res, FunCode handle);
-static __inline__ PStack_p PStackRemoveDuplicatesInt(PStack_p handle);
-static __inline__ PStack_p PStackRemoveDuplicatesTerm(PStack_p handle);
 static __inline__ void PStackPrintFunCodes(ND_p control, PStack_p handle);
 static __inline__ void UpdateControlSymbols(ND_p control);
 //static void PStackPrintTerms(ND_p control, PStack_p handle);
@@ -141,7 +138,7 @@ void FormulaSetUpdateControlSymbols(ND_p control, FormulaSet_p target);
 /*  Inline function definitions
 */
 
-
+/*
 static __inline__ void UpdateControlSymbols(ND_p control)
 {
    PStack_p predicates_duplicates_removed = PStackRemoveDuplicatesInt(control->predicates);
@@ -163,71 +160,13 @@ static __inline__ bool FunCodeIsFunction(ND_p res, FunCode handle)
 {
 	return PStackFindInt(res->functions,handle);
 }
-
+*/
 //  returns true if handle is an element of res
-
-static __inline__ bool PStackFindInt(PStack_p res, FunCode handle)
-{
-   PStackPointer i;
-
-   for(i=0; i<PStackGetSP(res); i++)
-   {
-      if (PStackElementInt(res,i) == handle)
-      {
-		  return true;
-	  }
-   }
-   return false;
-}
 
 //  look for duplicate Term_p in res
 
-static __inline__ bool PStackFindTerm(PStack_p res, Term_p handle)
-{
-   PStackPointer i;
 
-   for(i=0; i<PStackGetSP(res); i++)
-   {
-      if (TermStructEqual(PStackElementP(res,i),handle))
-      {
-		  return true;
-	  }
-   }
-   return false;
-}
 
-// returns copy of handle with duplicates removed
-
-static __inline__ PStack_p PStackRemoveDuplicatesInt(PStack_p handle)
-{
-	PStackPointer i;
-	PStack_p res = PStackAlloc();
-	for(i=0; i<PStackGetSP(handle); i++)
-	{
-		if (!PStackFindInt(res,PStackElementInt(handle,i)))
-		{
-			PStackPushInt(res,PStackElementInt(handle,i));
-		}
-	}
-	PStackFree(handle);
-	return res;
-}
-
-// unfinished
-
-static __inline__ PStack_p PStackRemoveDuplicatesTerm(PStack_p handle)
-{
-	PStackPointer i;
-	PStack_p res = PStackAlloc();
-	for(i=0; i<PStackGetSP(handle); i++)
-	{
-		if (!PStackFindTerm(res,PStackElementP(handle,i)))
-		{
-			PStackPushP(res,PStackElementP(handle,i));
-		}
-	}
-	return res;
-}
 
 // print the funcodes in the stack handle
 

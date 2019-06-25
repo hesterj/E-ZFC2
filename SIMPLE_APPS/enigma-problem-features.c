@@ -198,7 +198,7 @@ static void clause_features_string(DStr_p str, Clause_p clause, Sig_p sig, long*
       PStackFree(mod_stack);
    }
 }
-
+/*
 static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig)
 {
    static char fstr[1024];
@@ -234,7 +234,45 @@ static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig)
       }
    }
 }
+*/
 
+static void clause_static_features_string(DStr_p str, long* vec, Sig_p sig)
+{
+   static char fstr[1024];
+
+   if (Enigma & EFLengths) 
+   {
+      snprintf(fstr, 1024, "!LEN/%ld ", vec[0]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!POS/%ld ", vec[1]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!NEG/%ld ", vec[2]); DStrAppendStr(str, fstr);
+      snprintf(fstr, 1024, "!SCH/%ld ", vec[3]); DStrAppendStr(str, fstr);
+   }
+
+   if (!(Enigma & EFSymbols)) 
+   {
+      return;
+   }
+   
+   for (long f=sig->internal_symbols+1; f<=sig->f_count; f++)
+   {
+      char* fname = SigFindName(sig, f);
+      if ((strlen(fname)>3) && (strncmp(fname, "esk", 3) == 0))
+      {
+         continue;
+      }
+      if (vec[4+4*f+0] > 0) // All lines below this in the method have been changed by John to allow the !SCH feature at index 3
+      {
+         snprintf(fstr, 1024, "#+%s/%ld ", fname, vec[4+4*f+0]); DStrAppendStr(str, fstr);  
+         snprintf(fstr, 1024, "%%+%s/%ld ", fname, vec[4+4*f+1]+1); DStrAppendStr(str, fstr);
+      }
+      if (vec[4+4*f+2] > 0) 
+      {
+         snprintf(fstr, 1024, "#-%s/%ld ", fname, vec[4+4*f+2]); DStrAppendStr(str, fstr);
+         snprintf(fstr, 1024, "%%-%s/%ld ", fname, vec[4+4*f+3]+1); DStrAppendStr(str, fstr);
+      }
+   }
+}
+/*
 static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
 {
    static long* vec = NULL;
@@ -270,6 +308,49 @@ static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
    DStrDeleteLastChar(str);
    return str;
 }
+*/
+
+static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
+{
+   static long* vec = NULL;
+   static size_t size = 0;
+   if (!vec)
+   {
+      size = (4+4*64)*sizeof(long); // start with memory for 64 symbols, John changed 3 to 4
+      vec = RegMemAlloc(size);
+   }
+   vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));   //John
+   for (int i=0; i<4+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }  //John
+
+   DStr_p str = DStrAlloc();
+   Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
+   ScannerSetFormat(in, TSTPFormat);
+   while (TestInpId(in, "cnf"))
+   {
+      Clause_p clause = ClauseParse(in, bank);
+      vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));  //John
+      if (ClauseQueryTPTPType(clause) == CPTypeNegConjecture) 
+      {
+         vec[0] += (long)ClauseWeight(clause,1,1,1,1,1,false);
+         vec[1] += clause->pos_lit_no;
+         vec[2] += clause->neg_lit_no;
+         int schema = 0;  //John
+         if (ClauseQueryProp(clause,CPIsSchema))
+         {
+				schema = 1;
+			}
+			vec[3] += schema;
+         clause_features_string(str, clause, bank->sig, &vec[4]); //John
+      }
+      ClauseFree(clause);
+   }
+   CheckInpTok(in, NoToken);
+   DestroyScanner(in);
+
+   clause_static_features_string(str, vec, bank->sig);
+   DStrDeleteLastChar(str);
+   return str;
+}
 
 // TODO: join these two!
 static DStr_p get_theory_features_string(char* filename, TB_p bank)
@@ -278,11 +359,11 @@ static DStr_p get_theory_features_string(char* filename, TB_p bank)
    static size_t size = 0;
    if (!vec)
    {
-      size = (3+4*64)*sizeof(long); // start with memory for 64 symbols
+      size = (4+4*64)*sizeof(long); // start with memory for 64 symbols, John changed 3 to 4
       vec = RegMemAlloc(size);
    }
-   vec = RegMemProvide(vec, &size, (3+4*(bank->sig->f_count+1))*sizeof(long));
-   for (int i=0; i<3+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }
+   vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));  //John
+   for (int i=0; i<4+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }  //John
 
    DStr_p str = DStrAlloc();
    Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
@@ -290,13 +371,19 @@ static DStr_p get_theory_features_string(char* filename, TB_p bank)
    while (TestInpId(in, "cnf"))
    {
       Clause_p clause = ClauseParse(in, bank);
-      vec = RegMemProvide(vec, &size, (3+4*(bank->sig->f_count+1))*sizeof(long));
+      vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));  //John
       if (ClauseQueryTPTPType(clause) != CPTypeNegConjecture) 
       {
          vec[0] += (long)ClauseWeight(clause,1,1,1,1,1,false);
          vec[1] += clause->pos_lit_no;
          vec[2] += clause->neg_lit_no;
-         clause_features_string(str, clause, bank->sig, &vec[3]);
+         int schema = 0;  //John
+         if (ClauseQueryProp(clause,CPIsSchema))
+         {
+				schema = 1;
+			}
+			vec[3] += schema;
+         clause_features_string(str, clause, bank->sig, &vec[4]);  //John
       }
       ClauseFree(clause);
    }

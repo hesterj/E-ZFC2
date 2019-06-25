@@ -432,11 +432,14 @@ int main(int argc, char* argv[])
    //FormulaSetPrint(GlobalOut,subformulas,true);
    //printf("\n");
    
-   //FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
+   FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
    //FormulaSetInsertSet(generalizations, subformulas);
-   //printf("GENERALIZATIONS AND SUBFORMULAS:\n");
+   //printf("GENERALIZATIONS:\n");
    //FormulaSetPrint(GlobalOut,generalizations,true);
    //printf("\n");
+   FormulaSetInsertSet(subformulas,generalizations);
+   FormulaSetFree(generalizations);
+   
    //FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    

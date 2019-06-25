@@ -10,70 +10,6 @@
  * 
 */
 
-void ProofTest(ND_p ndcontrol)
-{
-   printf("\n");
-   TFormulaTPTPPrint(GlobalOut,ndcontrol->terms,ndcontrol->nd_generated->anchor->succ->tformula->args[0],true,true);
-   printf("\n");
-   TFormulaTPTPPrint(GlobalOut,ndcontrol->terms,ndcontrol->nd_generated->anchor->succ->tformula->args[1],true,true);
-   
-   //PStack_p variables = PStackAlloc();
-   WFormula_p goal = ndcontrol->nd_generated->anchor->succ;
-   WFormula_p start = WTFormulaAlloc(ndcontrol->terms,ndcontrol->nd_generated->anchor->succ->tformula->args[0]);
-   //nd_collect_subterms(ndcontrol,ndcontrol->signature,start->tformula,variables);
-   //Term_p x = PStackPopP(variables);
-   //printf("\n");
-   //TermPrint(GlobalOut,x,ndcontrol->signature,true);
-   Term_p y1 = VarBankGetFreshVar(ndcontrol->terms->vars,STIndividuals);
-   WFormula_p f1 = NDUniversalElimination(ndcontrol,ndcontrol->terms,start,y1);
-   WFormula_p f2 = NDAndElimination(ndcontrol,ndcontrol->terms,f1,0);
-   Term_p x = VarBankGetFreshVar(ndcontrol->terms->vars,STIndividuals);
-   WFormula_p f3 = NDUniversalIntroduction(ndcontrol,ndcontrol->terms,y1,x,f2);
-   Term_p y2 = VarBankGetFreshVar(ndcontrol->terms->vars,STIndividuals);
-   WFormula_p f4 = NDUniversalElimination(ndcontrol,ndcontrol->terms,start,y2);
-   WFormula_p f5 = NDAndElimination(ndcontrol,ndcontrol->terms,f4,1);
-   WFormula_p f6 = NDUniversalIntroduction(ndcontrol,ndcontrol->terms,y2,x,f5);
-   WFormula_p f7 = NDAndIntroduction(ndcontrol,ndcontrol->terms,f3,f6);
-   WFormula_p f8 = NDImplIntroduction(ndcontrol,ndcontrol->terms,start,f7);
-   
-   TFormula_p var_renamed = f8->tformula;
-   var_renamed = TFormulaVarRename(ndcontrol->terms,var_renamed);
-   WFormula_p f_renamed = WTFormulaAlloc(ndcontrol->terms,var_renamed);
-   
-   printf("\nstart: \n");
-   WFormulaPrint(GlobalOut,start,true);
-   printf("\nf1: \n");
-   WFormulaPrint(GlobalOut,f1,true);
-   printf("\nf2: \n");
-   WFormulaPrint(GlobalOut,f2,true);
-   printf("\nf3: \n");
-   WFormulaPrint(GlobalOut,f3,true);
-   printf("\nf4: \n");
-   WFormulaPrint(GlobalOut,f4,true);
-   printf("\nf5: \n");
-   WFormulaPrint(GlobalOut,f5,true);
-   printf("\nf6: \n");
-   WFormulaPrint(GlobalOut,f6,true);
-   printf("\nf7: \n");
-   WFormulaPrint(GlobalOut,f7,true);
-   printf("\nf8: \n");
-   WFormulaPrint(GlobalOut,f8,true);
-   
-   printf("\nResult: \n");
-   WFormulaPrint(GlobalOut,f_renamed,true);
-   printf("\nGoal: \n");
-   WFormulaPrint(GlobalOut,goal,true);
-   Subst_p subst = SubstAlloc();
-   //bool success = SubstComputeMatch(f_renamed,goal,temp_subst);
-   //bool success_2 = SubstComputeMgu(f_renamed,goal,temp_subst);
-   
-   bool success = NDUnify(ndcontrol,subst,f_renamed->tformula,goal->tformula);
-   //bool success_2 = NDUnify(ndcontrol,subst,f8->tformula,f7->tformula);
-   
-   //printf("\nsuccess: %d success2: %d\n",success,success_2);
-   printf("\nsuccess: %d\n",success);
-
-}
 
 /*  Unification algorithm from Handbook of Automated Reasoning p. 454
  * 
@@ -616,6 +552,7 @@ WFormula_p NDNegIntroduction(ND_p control,TB_p bank, WFormula_p a, WFormula_p b,
 	
 	return handle;
 }
+
 
 /*  Does not check if the ND rule is allowed!!!  Only does it if physically possible
  *  Return NULL if term is not a subterm of the formula

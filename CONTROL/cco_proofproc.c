@@ -37,10 +37,20 @@ PERF_CTR_DEFINE(BWRWTimer);
 
 void PrintTermStack(Sig_p sig, PStack_p stack);
 TFormula_p TFormulaMergeVars(TFormula_p formula,  TB_p bank, Term_p x, Term_p y);
+FormulaSet_p CreateNearbyFormulas(ProofState_p state, FormulaSet_p input, int distance);
 
 /*  John's Functions
  * 
 */
+
+WFormula_p NegIntroductionSimple(TB_p bank, WFormula_p a)
+{
+	TFormula_p a_tform = a->tformula;
+	TFormula_p a_neg = TFormulaFCodeAlloc(bank,bank->sig->not_code,a_tform,NULL);
+	
+	WFormula_p handle = WTFormulaAlloc(bank,a_neg);
+	return handle;
+}
 
 TFormula_p TFormulaMergeVars(TFormula_p formula,  TB_p bank, Term_p x, Term_p y)
 {
@@ -90,7 +100,18 @@ PStack_p PStackRemoveDuplicatesTerm(PStack_p handle)
 	}
 	return res;
 }
-
+/*
+FunCode VariableThatDoesNotOccurInStack(ProofState_p control, PStack_p handle)
+{
+	PStack_p function_symbols = PStackAlloc();
+	FunCode minimal;
+	
+	LabelFunctionSymbols(control,handle->tformula,function_symbols);	
+	
+	PStackFree(function_symbols);
+	return minimal;
+}
+*/
 // returns the subterms of formulas in set
 
 PStack_p FormulaSetCollectSubterms(ProofState_p control, FormulaSet_p set)
@@ -260,6 +281,32 @@ int LabelFunctionSymbols(ProofState_p control, Term_p term, PStack_p function_sy
 	return 0;
 }
 
+// ideally will create the nearby formulas of input subformulas within a reasonable "distance"
+
+FormulaSet_p CreateNearbyFormulas(ProofState_p state, FormulaSet_p input, int distance)
+{
+	FormulaSet_p new_formulas = FormulaSetAlloc();
+	WFormula_p handle = input->anchor->succ;
+	TB_p bank = state->terms;
+	
+	while (handle != input->anchor)
+	{
+		if (handle->tformula->f_code != state->signature->not_code)
+		{
+			WFormula_p new = NegIntroductionSimple(bank, handle);
+			FormulaSetInsert(new_formulas,new);
+		}
+		else
+		{
+			WFormula_p new = WTFormulaAlloc(bank,handle->tformula->args[0]);
+			FormulaSetInsert(new_formulas,new);
+		}
+		handle = handle->succ;
+	}
+	
+	return new_formulas;
+}
+
 // need to actually generalize now
 
 FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int iterations)
@@ -267,55 +314,38 @@ FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int
 	FormulaSet_p generalizations = FormulaSetAlloc();
 	Sig_p sig = proofstate->signature;
 	TB_p bank = proofstate->terms;
-	//PStack_p subterms = PStackAlloc();
-	//PStack_p fsymbols = PStackAlloc();
+	
+	// 6/24/19 Add some more subformula neighbors so that we will have more comprehension options
+	FormulaSet_p subformula_neighbors = CreateNearbyFormulas(proofstate,input,iterations);
+	FormulaSetInsertSet(input,subformula_neighbors);
+	FormulaSetFree(subformula_neighbors);
+	
 	WFormula_p handle = input->anchor->succ;
+	
 	
 	while (handle != input->anchor)
 	{
-		PStack_p all_subterms = FormulaSetCollectSubterms(proofstate, input); 
-		
-		//printf("\n");
+		PStack_p all_subterms = FormulaSetCollectSubterms(proofstate, input);
 		
 		for (PStackPointer i = 0; i<PStackGetSP(all_subterms); i++)
 		{
 			Term_p current = PStackElementP(all_subterms,i);
-			//if (TermIsVar(current)) continue; // no point in generalizaing variables
 			if (!TermIsSubterm(handle->tformula,current,DEREF_NEVER))
 			{
-				//printf("doesn't occur\n");
 				continue;
 			}
-			//printf("\n current:\n");
-			//TermPrint(GlobalOut,current,sig,DEREF_NEVER);
 			PStack_p subterm_generalizations = ComputeSubtermsGeneralizations(current, proofstate->terms->vars);
-			//printf("\n___A___\n");
-			//PrintTermStack(sig,subterm_generalizations);
-			//printf("\n___B___\n");
 			for (PStackPointer j = 0; j<PStackGetSP(subterm_generalizations); j++)
 			{
-				//printf("\n\nformula: "); 
-				//WFormulaPrint(GlobalOut, handle, true);
-				//printf("\n");
 				Term_p generalization_of_current = PStackElementP(subterm_generalizations,j);
-				//TermPrint(GlobalOut,current,sig,DEREF_NEVER); 
-				//printf(" => "); 
-				//TermPrint(GlobalOut,generalization_of_current, sig, DEREF_NEVER);
 				TFormula_p replaced = TFormulaMergeVars(handle->tformula,bank,current,generalization_of_current);
-				//printf("\n");
-				//TFormulaTPTPPrint(GlobalOut,bank,replaced,true,true);
 				WFormula_p generalized_formula = WTFormulaAlloc(bank, replaced);
 				FormulaSetInsert(generalizations,generalized_formula);
-				//printf("\n");
-				//WFormulaPrint(GlobalOut,generalized_formula,true);
-				//exit(0);
 			}
 		}
 		
 		handle = handle->succ;
 	}
-	//exit(0);
-	//FormulaSetInsertSet(generalizations,input);
 	return generalizations;
 }
 
@@ -641,9 +671,54 @@ TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStack
 	
 	TFormula_p freevariable = (TFormula_p) pointer;
 	
-	TFormula_p a = VarBankGetFreshVar(state->freshvars,freevariable->sort);
-	TFormula_p b = VarBankGetFreshVar(state->freshvars,freevariable->sort);
-	//TFormula_p a = VarBankVarAlloc(state->terms->vars
+	//find a fresh variable
+	PStack_p function_symbols = PStackAlloc();
+	PStack_p subterms = PStackAlloc();
+	LabelFunctionSymbols(state,input,function_symbols);
+	CollectSubterms(state,input,subterms,function_symbols);
+	
+	//printf("\nTerms found:\n");
+	//PrintTermStack(state->signature,subterms);
+	FunCode minimal = 0;
+	for (PStackPointer i=0; i<PStackGetSP(subterms);i++)
+	{
+		Term_p subterm = PStackElementP(subterms,i);
+		//printf("fcode: %ld minimal: %ld\n",subterm->f_code,minimal);
+		if (subterm->f_code < minimal)
+		{
+			minimal = subterm->f_code;
+		}
+	}
+	FunCode minimal1 = minimal - 2;
+	FunCode minimal2 = minimal - 4;
+	
+	PStackEmpty(subterms);
+	PStackFree(subterms);
+	PStackFree(function_symbols);
+	// minimal1 is now the FunCode of a variable that does not occur in the function, same for minimal2
+	
+	TFormula_p a,b;
+	a = VarBankFCodeFind(state->terms->vars,minimal1);
+	if (!a)
+	{
+		//printf("allocing a\n");
+		a = VarBankVarAlloc(state->terms->vars,minimal1,freevariable->sort);
+	}
+	b = VarBankFCodeFind(state->terms->vars,minimal2);
+   if (!b)
+	{
+		//printf("allocing b\n");
+		b = VarBankVarAlloc(state->terms->vars,minimal2,freevariable->sort);
+	}
+	assert(a);
+	assert(b);
+	//printf("\nnew variables\n");
+	//TermPrint(GlobalOut,a,state->signature,DEREF_NEVER);
+	//printf("\n");
+	//TermPrint(GlobalOut,b,state->signature,DEREF_NEVER);
+	//exit(0);
+	//TFormula_p a = VarBankGetFreshVar(state->freshvars,freevariable->sort);
+	//TFormula_p b = VarBankGetFreshVar(state->freshvars,freevariable->sort);
 	
 	TFormula_p xina = TFormulaFCodeAlloc(bank,member,freevariable,a);
 	TFormula_p xinb = TFormulaFCodeAlloc(bank,member,freevariable,b);
