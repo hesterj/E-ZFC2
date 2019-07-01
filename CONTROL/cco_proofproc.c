@@ -43,6 +43,19 @@ FormulaSet_p CreateNearbyFormulas(ProofState_p state, FormulaSet_p input, int di
  * 
 */
 
+void FormulaSetCopyFormulas(FormulaSet_p to, FormulaSet_p from)
+{
+   WFormula_p handle = NULL;
+   WFormula_p copy_handle = NULL;
+   handle = from->anchor->succ;
+   while (handle != from->anchor)
+   {
+	   copy_handle = WFormulaFlatCopy(handle);
+	   FormulaSetInsert(to,copy_handle);
+	   handle = handle->succ;
+   }
+}
+
 WFormula_p NegIntroductionSimple(TB_p bank, WFormula_p a)
 {
 	TFormula_p a_tform = a->tformula;
@@ -317,9 +330,10 @@ FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int
 	
 	// 6/24/19 Add some more subformula neighbors so that we will have more comprehension options
 	FormulaSet_p subformula_neighbors = CreateNearbyFormulas(proofstate,input,iterations);
+	printf("neighbors: %ld\n",subformula_neighbors->members);
+	FormulaSetCopyFormulas(generalizations,subformula_neighbors);
 	FormulaSetInsertSet(input,subformula_neighbors);
 	FormulaSetFree(subformula_neighbors);
-	
 	WFormula_p handle = input->anchor->succ;
 	
 	
@@ -2091,7 +2105,45 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    Clause_p         clause, resclause, tmp_copy, empty, arch_copy = NULL;
    FVPackedClause_p pclause;
    SysDate          clausedate;
-
+   
+   //printf("Processed count: %lu\n", state->processed_count);
+   // if we have reached a certain number of processed clauses, it's time to insert the rest
+   // of the comprehension instances
+   /*
+   if (state->processed_count > 5800)
+   {
+		ClauseSet_p schema_clauses = ClauseSetAlloc();
+		Clause_p schema_clause;
+		printf("\nC formulas: %ld\n",state->later_comprehension_instances->members);
+		FormulaSet_p archive = FormulaSetAlloc();
+		long cnf_size = FormulaSetCNF(state->later_comprehension_instances,
+                                state->f_ax_archive,
+                                schema_clauses,
+                                state->terms,
+                                state->freshvars,
+                                state->gc_terms);
+		
+		//WFormula_p handle = state->later_comprehension_instances->anchor->succ;
+		//while (handle != state->later_comprehension_instances->anchor)
+		//{
+		//	WFormulaCNF(handle,schema_clauses,state->terms,state->terms->vars);
+		//	handle = handle->succ;
+		//}
+		
+		FormulaSetFree(state->later_comprehension_instances);
+		printf("\nC clauses: %ld\n",cnf_size);
+		while ((schema_clause = ClauseSetExtractFirst(schema_clauses)))
+		{
+		  printf("\n@ ");
+		  ClausePrint(GlobalOut,schema_clause,true);
+		  ClauseSetProp(schema_clause, CPIsSchema);
+		  ClauseSetIndexedInsertClause(state->tmp_store, schema_clause);
+		  //HCBClauseEvaluate(control->hcb, tobeevaluated);
+		}
+		exit(0);
+	}
+	*/
+   // Select the next given clause
    clause = control->hcb->hcb_select(control->hcb,
                                      state->unprocessed);                   
                                      

@@ -118,6 +118,8 @@ long CollectSubterms(ProofState_p proofstate, Term_p term, PStack_p collector, P
 PStack_p FormulaSetLabelFunctionSymbols(ProofState_p control, FormulaSet_p set);
 PStack_p FormulaSetCollectSubterms(ProofState_p control, FormulaSet_p set);
 
+void FormulaSetCopyFormulas(FormulaSet_p to, FormulaSet_p from); 	
+
 #endif
 
 /*---------------------------------------------------------------------*/

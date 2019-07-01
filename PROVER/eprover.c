@@ -419,47 +419,38 @@ int main(int argc, char* argv[])
    // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
    // based on the stack of possible generalizations of terms we find with this method...
    
-   //printf("INITIAL AXIOMS:\n");
-   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   //printf("\n");
-   //FreeGeneralizations(subgens);
-   //exit(0);
+
    FormulaSet_p subformulas = FormulaSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   
-   //printf("SUBFORMULAS:\n");
-   //FormulaSetPrint(GlobalOut,subformulas,true);
-   //printf("\n");
-   
+   printf("subs: %ld\n", subformulas->members);
    FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
-   //FormulaSetInsertSet(generalizations, subformulas);
-   //printf("GENERALIZATIONS:\n");
-   //FormulaSetPrint(GlobalOut,generalizations,true);
+   printf("gens: %ld\n", generalizations->members);
+   
+   FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+   proofstate->later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
+   FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
+   
+   printf("gens: %ld\n", generalizations->members);
+   printf("later: %ld\n",proofstate->later_comprehension_instances->members);
+
+   
+   //printf("LATER COMPREHENSION INSTANCES:\n");
+   //FormulaSetPrint(GlobalOut,proofstate->later_comprehension_instances,true);
    //printf("\n");
-   FormulaSetInsertSet(subformulas,generalizations);
+   
+   FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
+   FormulaSetFree(early_comprehension_instances);
+   FormulaSetFree(subformulas);
    FormulaSetFree(generalizations);
    
-   //FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
-   FormulaSet_p comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+   //printf("LATER COMPREHENSION INSTANCES:\n");
+   //FormulaSetPrint(GlobalOut,proofstate->later_comprehension_instances,true);
+   //printf("\nSuccessful comprehension creation.\n");
    
-   //printf("COMPREHENSION INSTANCES:\n");
-   //FormulaSetPrint(GlobalOut,comprehension_instances,true);
-   //printf("\n");
    
-   //printf("AXIOMS BEFORE ADDING COMP:\n");
-   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   //printf("\n");
-   
-   FormulaSetInsertSet(proofstate->f_axioms,comprehension_instances);
-   FormulaSetFree(comprehension_instances);
-   FormulaSetFree(subformulas);
-   //FormulaSetFree(subformulas_and_generalizations);
-   
-	//printf("AXIOMS AFTER ADDING COMP:\n");
-   //FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
-   //printf("\n");
    //exit(0);
+   
    /////////////////////////////////////////////////////////////////////////////////////
    /*
    */
