@@ -1196,6 +1196,14 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
 										state->tmp_store, state->freshvars,
 										state);
    */
+   
+   // Add thee comprehension instances of generalizations, negations of subformulas
+   if (state->processed_count == 5800)  //John
+   {
+		ClauseSetInsertSet(state->tmp_store,state->later_comprehension_instances);
+		printf("#Inserted later comprehension instances.\n");
+		//exit(0);
+	}
    if(control->heuristic_parms.enable_eq_factoring)
    {
       state->factor_count+=
@@ -2105,44 +2113,8 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    Clause_p         clause, resclause, tmp_copy, empty, arch_copy = NULL;
    FVPackedClause_p pclause;
    SysDate          clausedate;
-   
-   //printf("Processed count: %lu\n", state->processed_count);
-   // if we have reached a certain number of processed clauses, it's time to insert the rest
-   // of the comprehension instances
-   /*
-   if (state->processed_count > 5800)
-   {
-		ClauseSet_p schema_clauses = ClauseSetAlloc();
-		Clause_p schema_clause;
-		printf("\nC formulas: %ld\n",state->later_comprehension_instances->members);
-		FormulaSet_p archive = FormulaSetAlloc();
-		long cnf_size = FormulaSetCNF(state->later_comprehension_instances,
-                                state->f_ax_archive,
-                                schema_clauses,
-                                state->terms,
-                                state->freshvars,
-                                state->gc_terms);
-		
-		//WFormula_p handle = state->later_comprehension_instances->anchor->succ;
-		//while (handle != state->later_comprehension_instances->anchor)
-		//{
-		//	WFormulaCNF(handle,schema_clauses,state->terms,state->terms->vars);
-		//	handle = handle->succ;
-		//}
-		
-		FormulaSetFree(state->later_comprehension_instances);
-		printf("\nC clauses: %ld\n",cnf_size);
-		while ((schema_clause = ClauseSetExtractFirst(schema_clauses)))
-		{
-		  printf("\n@ ");
-		  ClausePrint(GlobalOut,schema_clause,true);
-		  ClauseSetProp(schema_clause, CPIsSchema);
-		  ClauseSetIndexedInsertClause(state->tmp_store, schema_clause);
-		  //HCBClauseEvaluate(control->hcb, tobeevaluated);
-		}
-		exit(0);
-	}
-	*/
+  
+	
    // Select the next given clause
    clause = control->hcb->hcb_select(control->hcb,
                                      state->unprocessed);                   

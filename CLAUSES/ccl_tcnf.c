@@ -1089,8 +1089,11 @@ TFormula_p TFormulaSimplify(TB_p terms, TFormula_p form, bool full_simpl)
    bool modified=false;
 
    assert(terms);
-
-   // printf("Simplify %p %ld: ", form, form->weight);/* TFormulaTPTPPrint(stdout, terms, form, true, false)*/;printf("\n");
+	
+	//printf("%p\n",form);
+	//printf("%ld\n",form->weight);
+	//TermPrint(GlobalOut,form,terms->sig,true);printf("\n");
+   //printf("Simplify %p %ld: ", form, form->weight);/* TFormulaTPTPPrint(stdout, terms, form, true, false)*/;printf("\n");
 
    if(TFormulaIsLiteral(terms->sig, form))
    {
@@ -1516,6 +1519,10 @@ TFormula_p TFormulaVarRename(TB_p terms, TFormula_p form)
 {
    Term_p old_var = NULL, new_var = NULL;
    TFormula_p handle = NULL, arg1=NULL, arg2=NULL;
+   
+   //John
+   //TFormulaTPTPPrint(GlobalOut,terms,form,true,true);
+   //printf("\nTFormulaVarRename\n");
 
    if(TFormulaIsQuantified(terms->sig, form))
    {

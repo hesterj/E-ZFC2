@@ -281,12 +281,17 @@ static __inline__ Term_p TermDerefAlways(Term_p term)
 static __inline__ Term_p TermDeref(Term_p term, DerefType_p deref)
 {
    assert(TermIsVar(term)||!(term->binding));
-
+   
+   
    if(*deref == DEREF_ALWAYS)
    {
       while(term->binding)
       {
+			if (term == term->binding) break;  //John
          term = term->binding;
+         //John
+			//printf("\nTermDeref f_code %ld\n",term->f_code);
+			//VarPrint(GlobalOut,term->f_code);
       }
    }
    else
