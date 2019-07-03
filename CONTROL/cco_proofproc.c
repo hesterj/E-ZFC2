@@ -1198,12 +1198,26 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
    */
    
    // Add thee comprehension instances of generalizations, negations of subformulas
+   /*
    if (state->processed_count == 5800)  //John
+   //if (state->processed_count%1000 == 0)
    {
 		ClauseSetInsertSet(state->tmp_store,state->later_comprehension_instances);
+		
+		for (int i=0;i<10;i++)
+		{
+			if (state->later_comprehension_instances->members == 0)
+			{
+				break;
+			}
+			Clause_p clause = ClauseSetExtractFirst(state->later_comprehension_instances);
+			ClauseSetInsert(state->tmp_store,clause);
+		}
+		
 		printf("#Inserted later comprehension instances.\n");
 		//exit(0);
 	}
+	*/
    if(control->heuristic_parms.enable_eq_factoring)
    {
       state->factor_count+=

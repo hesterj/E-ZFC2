@@ -376,8 +376,8 @@ static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
       size = (4+4*64)*sizeof(long); // start with memory for 64 symbols
       vec = RegMemAlloc(size);
    }
-   vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));
-   for (int i=0; i<4+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }
+   vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));  //John
+   for (int i=0; i<4+4*(bank->sig->f_count+1); i++) { vec[i] = 0L; }  //John
 
    DStr_p str = DStrAlloc();
    Scanner_p in = CreateScanner(StreamTypeFile, filename, true, NULL);
@@ -385,19 +385,19 @@ static DStr_p get_conjecture_features_string(char* filename, TB_p bank)
    while (TestInpId(in, "cnf"))
    {
       Clause_p clause = ClauseParse(in, bank);
-      vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));
+      vec = RegMemProvide(vec, &size, (4+4*(bank->sig->f_count+1))*sizeof(long));  //John
       if (ClauseQueryTPTPType(clause) == CPTypeNegConjecture) 
       {
          vec[0] += (long)ClauseWeight(clause,1,1,1,1,1,false);
          vec[1] += clause->pos_lit_no;
          vec[2] += clause->neg_lit_no;
          int schema_clause = 0;
-         if (ClauseQueryProp(clause,CPIsSchema))
+         if (ClauseQueryProp(clause,CPIsSchema)) //John
          {
 				schema_clause = 1;
 			}
 			vec[3] += schema_clause;
-         clause_features_string(str, clause, bank->sig, &vec[4]);
+         clause_features_string(str, clause, bank->sig, &vec[4]); //John
          if (Enigma & EFVariables)
          {
             int distinct = 0;

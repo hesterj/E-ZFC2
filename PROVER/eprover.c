@@ -440,23 +440,27 @@ int main(int argc, char* argv[])
    //printf("\n");
    
    FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
+   FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
    //FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);  // we need to CNF these but it isn't working!!!  So for now inserting them in to proofstate axioms
-   //FormulaSetFree(early_comprehension_instances);
-   //FormulaSetFree(subformulas);
-   //FormulaSetFree(generalizations);
+   FormulaSetFree(early_comprehension_instances);
+   FormulaSetFree(later_comprehension_instances);
+   FormulaSetFree(subformulas);
+   FormulaSetFree(generalizations);
    //exit(0);
-   proofstate->later_comprehension_instances = ClauseSetAlloc();
-   ClauseSet_p final = proofstate->later_comprehension_instances;
-   WFormula_p target = later_comprehension_instances->anchor->succ;
+   //proofstate->later_comprehension_instances = ClauseSetAlloc();
+   //ClauseSet_p final = proofstate->later_comprehension_instances;
+   //WFormula_p target = later_comprehension_instances->anchor->succ;
    //WFormulaPrint(GlobalOut,target,true);printf("\n");
    //FormulaSet_p comp_archive = FormulaSetAlloc();
+   /*
    FormulaSetDocInital(GlobalOut, OutputLevel, later_comprehension_instances);
    FormulaSetPreprocConjectures(later_comprehension_instances,
                                     proofstate->f_ax_archive,
                                     answer_limit>0,
                                     conjectures_are_questions);
+   */
    //WFormulaCNF(target,final,proofstate->terms,proofstate->terms->vars);
-   
+   /*
    FormulaSetCNF2(later_comprehension_instances,
 						proofstate->f_ax_archive,
 						proofstate->later_comprehension_instances,
@@ -464,9 +468,7 @@ int main(int argc, char* argv[])
 						proofstate->terms->vars,
 						proofstate->gc_terms,
 						miniscope_limit);
-	
-   printf("\n");
-   FormulaSetFree(later_comprehension_instances);
+	*/
    //exit(0);
    
    //printf("LATER COMPREHENSION INSTANCES:\n");
