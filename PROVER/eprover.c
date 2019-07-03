@@ -423,15 +423,15 @@ int main(int argc, char* argv[])
    FormulaSet_p subformulas = FormulaSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   printf("subs: %ld\n", subformulas->members);
+   printf("#subs: %ld\n", subformulas->members);
    FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
-   printf("gens: %ld\n", generalizations->members);
+   printf("#gens: %ld\n", generalizations->members);
    
    FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
    
-   printf("gens: %ld\n", generalizations->members);
+   printf("#gens: %ld\n", generalizations->members);
    //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
 
    
