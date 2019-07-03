@@ -631,8 +631,8 @@ long FormulaSetCNF2(FormulaSet_p set, FormulaSet_p archive,
    while(!FormulaSetEmpty(set))
    {
       handle = FormulaSetExtractFirst(set);
-      WFormulaPrint(stdout, handle, true);
-      fprintf(stdout, "\n");
+      //WFormulaPrint(stdout, handle, true);
+      //fprintf(stdout, "\n");
       if(BuildProofObject)
       {
          form = WFormulaFlatCopy(handle);

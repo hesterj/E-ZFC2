@@ -429,7 +429,7 @@ int main(int argc, char* argv[])
    
    FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
-   FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
+   //FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
    
    printf("#gens: %ld\n", generalizations->members);
    //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
@@ -447,20 +447,21 @@ int main(int argc, char* argv[])
    FormulaSetFree(subformulas);
    FormulaSetFree(generalizations);
    //exit(0);
-   //proofstate->later_comprehension_instances = ClauseSetAlloc();
-   //ClauseSet_p final = proofstate->later_comprehension_instances;
-   //WFormula_p target = later_comprehension_instances->anchor->succ;
+   /*
+   proofstate->later_comprehension_instances = ClauseSetAlloc();
+   ClauseSet_p final = proofstate->later_comprehension_instances;
+   WFormula_p target = later_comprehension_instances->anchor->succ;
    //WFormulaPrint(GlobalOut,target,true);printf("\n");
    //FormulaSet_p comp_archive = FormulaSetAlloc();
-   /*
+   
    FormulaSetDocInital(GlobalOut, OutputLevel, later_comprehension_instances);
    FormulaSetPreprocConjectures(later_comprehension_instances,
                                     proofstate->f_ax_archive,
                                     answer_limit>0,
                                     conjectures_are_questions);
-   */
+   
    //WFormulaCNF(target,final,proofstate->terms,proofstate->terms->vars);
-   /*
+   
    FormulaSetCNF2(later_comprehension_instances,
 						proofstate->f_ax_archive,
 						proofstate->later_comprehension_instances,
@@ -468,9 +469,9 @@ int main(int argc, char* argv[])
 						proofstate->terms->vars,
 						proofstate->gc_terms,
 						miniscope_limit);
-	*/
+	
    //exit(0);
-   
+   */
    //printf("LATER COMPREHENSION INSTANCES:\n");
    //FormulaSetPrint(GlobalOut,proofstate->later_comprehension_instances,true);
    //printf("\nSuccessful comprehension creation.\n");
@@ -481,6 +482,7 @@ int main(int argc, char* argv[])
    /////////////////////////////////////////////////////////////////////////////////////
    /*
    */
+
    if(strategy_scheduling)
    {
       ExecuteSchedule(StratSchedule, h_parms, print_rusage);
@@ -504,6 +506,7 @@ int main(int argc, char* argv[])
    {
       FormulaSetArchive(proofstate->f_axioms, proofstate->f_ax_archive);
    }
+
    //printf("Alive (-2)!\n");
    if((neg_conjectures =
        FormulaSetPreprocConjectures(proofstate->f_axioms,
@@ -513,6 +516,7 @@ int main(int argc, char* argv[])
    {
       VERBOUT("Negated conjectures.\n");
    }
+
    //printf("Alive (-1)!\n");
 
    if(new_cnf)

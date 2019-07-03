@@ -1199,8 +1199,7 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
    
    // Add thee comprehension instances of generalizations, negations of subformulas
    /*
-   if (state->processed_count == 5800)  //John
-   //if (state->processed_count%1000 == 0)
+   if (state->processed_count == 5000)  //John
    {
 		ClauseSetInsertSet(state->tmp_store,state->later_comprehension_instances);
 		
