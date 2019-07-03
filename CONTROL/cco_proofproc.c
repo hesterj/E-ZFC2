@@ -330,7 +330,7 @@ FormulaSet_p GeneralizeFormulas(ProofState_p proofstate, FormulaSet_p input, int
 	
 	// 6/24/19 Add some more subformula neighbors so that we will have more comprehension options
 	FormulaSet_p subformula_neighbors = CreateNearbyFormulas(proofstate,input,iterations);
-	printf("neighbors: %ld\n",subformula_neighbors->members);
+	//printf("#neighbors: %ld\n",subformula_neighbors->members);
 	FormulaSetCopyFormulas(generalizations,subformula_neighbors);
 	FormulaSetInsertSet(input,subformula_neighbors);
 	FormulaSetFree(subformula_neighbors);
@@ -513,7 +513,7 @@ long compute_schemas_tform(ProofControl_p control, TB_p bank, OCB_p ocb, Clause_
 {
 	if (ClauseQueryProp(clause, CPIsSchema))
 	{
-		printf("\nSelected schema instance\n");
+		printf("\n#Selected schema instance\n");
       return 0;
 	}
 	
@@ -678,7 +678,7 @@ TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStack
 	}
 	else 
 	{
-		fprintf(GlobalOut, "\nNo known membership symbol, aborting.");
+		fprintf(GlobalOut, "\n#No known membership symbol, aborting.");
 		exit(0);
 	}
 	//TFormula_p new = TFormulaCopy(bank,input);
@@ -772,7 +772,7 @@ ClauseSet_p tformula_replacement(TB_p bank, ProofState_p state, PTree_p* freevar
 	
 	if (pointer0 == NULL || pointer1 == NULL)
 	{
-		printf("\nNULL pointer\n");
+		printf("\n#NULL pointer\n");
 	}
 	
 	TFormula_p temp1 = TFormulaCopy(bank,input);
