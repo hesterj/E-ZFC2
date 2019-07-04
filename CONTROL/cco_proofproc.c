@@ -468,6 +468,7 @@ long FormulaSetCollectSubformulas(ProofState_p state, FormulaSet_p input, Formul
 		subformula_count += WFormulaCollectSubformulas(state,handle,collector);
 		handle = handle->succ;
 	}
+	
 	return subformula_count;
 }
 
@@ -1199,22 +1200,13 @@ static void generate_new_clauses(ProofState_p state, ProofControl_p
    
    // Add thee comprehension instances of generalizations, negations of subformulas
    /*
-   if (state->processed_count == 5000)  //John
+   if ((state->comprehension_instances->members > 0) && 
+		((state->processed_count == 1) || 
+		 (state->processed_count%50 == 0)))  //John
    {
-		ClauseSetInsertSet(state->tmp_store,state->later_comprehension_instances);
-		
-		for (int i=0;i<10;i++)
-		{
-			if (state->later_comprehension_instances->members == 0)
-			{
-				break;
-			}
-			Clause_p clause = ClauseSetExtractFirst(state->later_comprehension_instances);
-			ClauseSetInsert(state->tmp_store,clause);
-		}
-		
-		printf("#Inserted later comprehension instances.\n");
-		//exit(0);
+		printf("#ADDING A SCHEMA\n");
+		Clause_p clause = ClauseSetExtractFirst(state->comprehension_instances);
+		ClauseSetInsert(state->tmp_store,clause);
 	}
 	*/
    if(control->heuristic_parms.enable_eq_factoring)
@@ -2130,7 +2122,28 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
 	
    // Select the next given clause
    clause = control->hcb->hcb_select(control->hcb,
-                                     state->unprocessed);                   
+                                     state->unprocessed);  
+   
+   //  Put the first 10 schema instances in, so that we avoid countersatisfiability
+   if (state->processed_count == 0)
+   {
+		Clause_p handle;
+		int i=0;
+		while (handle = ClauseSetExtractFirst(state->comprehension_instances))
+		{
+			if (i == 10) break;
+			ClauseSetInsert(state->tmp_store,handle);
+			i++;
+		}
+	}
+   // Otherwise, add a schema instance every 10 processed clauses                                  
+   if ((state->comprehension_instances->members > 0) && 
+		 (state->processed_count%10 == 0))  //John
+   {
+		printf("#ADDING A SCHEMA\n");
+		Clause_p clause = ClauseSetExtractFirst(state->comprehension_instances);
+		ClauseSetInsert(state->tmp_store,clause);
+	}                 
                                      
    //EvalListPrintComment(GlobalOut, clause->evaluations); printf("\n");
    if(OutputLevel==1)

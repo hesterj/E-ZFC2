@@ -421,8 +421,11 @@ int main(int argc, char* argv[])
    
 
    FormulaSet_p subformulas = FormulaSetAlloc();
+   proofstate->comprehension_instances = ClauseSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+   FormulaSetPrint(GlobalOut,subformulas,true);
+   //exit(0);
    printf("#subs: %ld\n", subformulas->members);
    FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
    printf("#gens: %ld\n", generalizations->members);
@@ -430,8 +433,10 @@ int main(int argc, char* argv[])
    FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    //FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
-   
-   printf("#gens: %ld\n", generalizations->members);
+   FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
+   FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
+   printf("\n#total comp formulas: %ld\n",early_comprehension_instances->members + later_comprehension_instances->members);
+   //exit(0);
    //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
 
    
@@ -538,9 +543,20 @@ int main(int argc, char* argv[])
                                proofstate->freshvars,
                                proofstate->gc_terms);
    }
-
+	///////////////////////////////////////////////////////////////////////////////////////////
+	Clause_p handle = proofstate->axioms->anchor->succ;
+	while (handle != proofstate->axioms->anchor)
+	{
+		Clause_p next = handle->succ;
+		if (ClauseQueryProp(handle,CPIsSchema))
+		{
+			ClauseSetMoveClause(proofstate->comprehension_instances,handle);
+		}
+		handle = next;
+	}
+	///////////////////////////////////////////////////////////////////////////////////////////
    //printf("Alive (0)!\n");
-
+	//exit(0);
    if(cnf_size)
    {
       VERBOUT("CNFization done\n");

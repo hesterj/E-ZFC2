@@ -61,7 +61,7 @@ typedef struct proofstatecell
    FormulaSet_p  f_archive;
    
    //FormulaSet_p  later_comprehension_instances;  // to be added later as they are less likely to be useful
-   ClauseSet_p  later_comprehension_instances;
+   ClauseSet_p  comprehension_instances;
    
    PStack_p      extract_roots;
    GlobalIndices gindices;
