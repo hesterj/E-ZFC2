@@ -2124,27 +2124,40 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    clause = control->hcb->hcb_select(control->hcb,
                                      state->unprocessed);  
    
+   printf("\n%ld\n",state->processed_count);
    //  Put the first 10 schema instances in, so that we avoid countersatisfiability
    if (state->processed_count == 0)
    {
 		Clause_p handle;
 		int i=0;
-		while (handle = ClauseSetExtractFirst(state->comprehension_instances))
+		printf("first 10, %ld\n",state->comprehension_instances->members);
+		//while (handle = ClauseSetExtractFirst(state->comprehension_instances))
+		while (handle = control->hcb->hcb_select(control->hcb,state->comprehension_instances))
 		{
 			if (i == 10) break;
+			ClauseSetExtractEntry(handle);
+			fprintf(GlobalOut,"@");
+			ClausePrint(GlobalOut,handle,true);
+			fprintf(GlobalOut,"\n");
 			ClauseSetInsert(state->tmp_store,handle);
 			i++;
 		}
 	}
-   // Otherwise, add a schema instance every 10 processed clauses                                  
+	exit(0);
+   // Otherwise, add a schema instance every 10 processed clauses  
+   /*                                
    if ((state->comprehension_instances->members > 0) && 
 		 (state->processed_count%10 == 0))  //John
    {
-		printf("#ADDING A SCHEMA\n");
-		Clause_p clause = ClauseSetExtractFirst(state->comprehension_instances);
+		fprintf(GlobalOut,"#ADDING A SCHEMA\n@");
+		//Clause_p clause = ClauseSetExtractFirst(state->comprehension_instances);
+		
+		Clause_p clause = control->hcb->hcb_select(control->hcb,state->comprehension_instances);
+		ClausePrint(GlobalOut,clause,true);
+		ClauseSetExtractEntry(clause);
 		ClauseSetInsert(state->tmp_store,clause);
 	}                 
-                                     
+   */                              
    //EvalListPrintComment(GlobalOut, clause->evaluations); printf("\n");
    if(OutputLevel==1)
    {

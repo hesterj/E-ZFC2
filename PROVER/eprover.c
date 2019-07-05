@@ -603,6 +603,18 @@ int main(int argc, char* argv[])
    //printf("Alive (1)!\n");
 
    ProofStateInit(proofstate, proofcontrol);
+   
+   ////////////////////////////////////////////////////////////////////////////////
+   // Evaluate the scores of the comprehension instances
+   
+   Clause_p clause_to_score = proofstate->comprehension_instances->anchor->succ;
+   while (clause_to_score != proofstate->comprehension_instances->anchor)
+   {
+		HCBClauseEvaluate(proofcontrol->hcb,clause_to_score);
+		clause_to_score = clause_to_score->succ;
+	}
+   
+   ///////////////////////////////////////////////////////////////////////////////////
    //printf("Alive (2)!\n");
 
    //ProofStateInitWatchlist(proofstate, proofcontrol->ocb);
