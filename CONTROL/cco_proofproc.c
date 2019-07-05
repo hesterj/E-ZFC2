@@ -2123,41 +2123,28 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
    // Select the next given clause
    clause = control->hcb->hcb_select(control->hcb,
                                      state->unprocessed);  
-   
-   printf("\n%ld\n",state->processed_count);
-   //  Put the first 10 schema instances in, so that we avoid countersatisfiability
-   if (state->processed_count == 0)
+                                     
+
+   //  Put the first 10 schema instances in, so that we avoid countersatisfiability                                  
+	if (state->processed_count == 0)
    {
 		Clause_p handle;
 		int i=0;
-		printf("first 10, %ld\n",state->comprehension_instances->members);
-		//while (handle = ClauseSetExtractFirst(state->comprehension_instances))
-		while (handle = control->hcb->hcb_select(control->hcb,state->comprehension_instances))
+		while (handle = ClauseSetExtractFirst(state->comprehension_instances))
 		{
-			if (i == 10) break;
-			ClauseSetExtractEntry(handle);
-			fprintf(GlobalOut,"@");
-			ClausePrint(GlobalOut,handle,true);
-			fprintf(GlobalOut,"\n");
+			if (i==10) break;
+			assert(handle);
 			ClauseSetInsert(state->tmp_store,handle);
 			i++;
 		}
 	}
-	exit(0);
-   // Otherwise, add a schema instance every 10 processed clauses  
-   /*                                
-   if ((state->comprehension_instances->members > 0) && 
-		 (state->processed_count%10 == 0))  //John
+                                    
+   if ((state->comprehension_instances->members > 0) && (state->processed_count%50 == 0))
    {
-		fprintf(GlobalOut,"#ADDING A SCHEMA\n@");
-		//Clause_p clause = ClauseSetExtractFirst(state->comprehension_instances);
-		
-		Clause_p clause = control->hcb->hcb_select(control->hcb,state->comprehension_instances);
-		ClausePrint(GlobalOut,clause,true);
-		ClauseSetExtractEntry(clause);
-		ClauseSetInsert(state->tmp_store,clause);
-	}                 
-   */                              
+		//clause = ClauseSetExtractFirst(state->comprehension_instances);
+		clause = state->comprehension_instances->anchor->succ;
+	}
+	
    //EvalListPrintComment(GlobalOut, clause->evaluations); printf("\n");
    if(OutputLevel==1)
    {

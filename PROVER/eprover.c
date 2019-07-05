@@ -424,18 +424,18 @@ int main(int argc, char* argv[])
    proofstate->comprehension_instances = ClauseSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   FormulaSetPrint(GlobalOut,subformulas,true);
+   //FormulaSetPrint(GlobalOut,subformulas,true);
    //exit(0);
-   printf("#subs: %ld\n", subformulas->members);
+   //printf("#subs: %ld\n", subformulas->members);
    FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
-   printf("#gens: %ld\n", generalizations->members);
+   //printf("#gens: %ld\n", generalizations->members);
    
    FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
    FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    //FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
-   FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
-   FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
-   printf("\n#total comp formulas: %ld\n",early_comprehension_instances->members + later_comprehension_instances->members);
+   //FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
+   //FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
+   //printf("\n#total comp formulas: %ld\n",early_comprehension_instances->members + later_comprehension_instances->members);
    //exit(0);
    //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
 
@@ -606,14 +606,16 @@ int main(int argc, char* argv[])
    
    ////////////////////////////////////////////////////////////////////////////////
    // Evaluate the scores of the comprehension instances
-   
+   /*
    Clause_p clause_to_score = proofstate->comprehension_instances->anchor->succ;
    while (clause_to_score != proofstate->comprehension_instances->anchor)
    {
 		HCBClauseEvaluate(proofcontrol->hcb,clause_to_score);
+		ClauseDelProp(handle, CPIsOriented);
+      DocClauseQuoteDefault(6, handle, "eval");
 		clause_to_score = clause_to_score->succ;
 	}
-   
+   */
    ///////////////////////////////////////////////////////////////////////////////////
    //printf("Alive (2)!\n");
 
