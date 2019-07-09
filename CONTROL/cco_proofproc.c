@@ -727,6 +727,10 @@ TFormula_p tformula_comprehension2(ProofState_p state, PStack_p freevars, PStack
 	}
 	assert(a);
 	assert(b);
+	
+	//Term_p a = VarBankGetFreshVar(bank->vars, STIndividuals);
+   //Term_p b = VarBankGetFreshVar(bank->vars, STIndividuals);
+	
 	//printf("\nnew variables\n");
 	//TermPrint(GlobalOut,a,state->signature,DEREF_NEVER);
 	//printf("\n");

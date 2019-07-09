@@ -424,14 +424,17 @@ int main(int argc, char* argv[])
    proofstate->comprehension_instances = ClauseSetAlloc();
    
    FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+   //printf("\nSUBFORMULAS:\n");
    //FormulaSetPrint(GlobalOut,subformulas,true);
    //exit(0);
    //printf("#subs: %ld\n", subformulas->members);
-   FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
+   //FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
    //printf("#gens: %ld\n", generalizations->members);
+   //printf("\nGENERALIZATIONS:\n");
+   //FormulaSetPrint(GlobalOut,generalizations,true);
    
    FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
-   FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
+   //FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
    //FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
    //FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
    //FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
@@ -440,17 +443,18 @@ int main(int argc, char* argv[])
    //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
 
    
-   //printf("LATER COMPREHENSION INSTANCES:\n");
+   //printf("'nCOMPREHENSION INSTANCES:\n");
    //FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
+   //FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
    //printf("\n");
    
    FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
-   FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
+   //FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
    //FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);  // we need to CNF these but it isn't working!!!  So for now inserting them in to proofstate axioms
    FormulaSetFree(early_comprehension_instances);
-   FormulaSetFree(later_comprehension_instances);
+   //FormulaSetFree(later_comprehension_instances);
    FormulaSetFree(subformulas);
-   FormulaSetFree(generalizations);
+   //FormulaSetFree(generalizations);
    //exit(0);
    /*
    proofstate->later_comprehension_instances = ClauseSetAlloc();
@@ -544,6 +548,7 @@ int main(int argc, char* argv[])
                                proofstate->gc_terms);
    }
 	///////////////////////////////////////////////////////////////////////////////////////////
+	/*
 	Clause_p handle = proofstate->axioms->anchor->succ;
 	while (handle != proofstate->axioms->anchor)
 	{
@@ -554,6 +559,7 @@ int main(int argc, char* argv[])
 		}
 		handle = next;
 	}
+	*/
 	///////////////////////////////////////////////////////////////////////////////////////////
    //printf("Alive (0)!\n");
 	//exit(0);
