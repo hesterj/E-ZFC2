@@ -99,6 +99,8 @@ PStack_p          wfcb_definitions, hcb_definitions;
 char              *sine=NULL;
 pid_t              pid = 0;
 
+int generalized_comprehension; // John
+
 FunctionProperties free_symb_prop = FPIgnoreProps;
 
 /*---------------------------------------------------------------------*/
@@ -419,74 +421,34 @@ int main(int argc, char* argv[])
    // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
    // based on the stack of possible generalizations of terms we find with this method...
    
-
-   FormulaSet_p subformulas = FormulaSetAlloc();
-   proofstate->comprehension_instances = ClauseSetAlloc();
-   
-   FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
-   //printf("\nSUBFORMULAS:\n");
-   //FormulaSetPrint(GlobalOut,subformulas,true);
-   //exit(0);
-   //printf("#subs: %ld\n", subformulas->members);
-   //FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
-   //printf("#gens: %ld\n", generalizations->members);
-   //printf("\nGENERALIZATIONS:\n");
-   //FormulaSetPrint(GlobalOut,generalizations,true);
-   
-   FormulaSet_p early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
-   //FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
-   //FormulaSetDocInital(GlobalOut, OutputLevel, proofstate->later_comprehension_instances);
-   //FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
-   //FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
-   //printf("\n#total comp formulas: %ld\n",early_comprehension_instances->members + later_comprehension_instances->members);
-   //exit(0);
-   //printf("later: %ld\n",proofstate->later_comprehension_instances->members);
-
-   
-   //printf("'nCOMPREHENSION INSTANCES:\n");
-   //FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
-   //FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
-   //printf("\n");
-   
-   FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
-   //FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
-   //FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);  // we need to CNF these but it isn't working!!!  So for now inserting them in to proofstate axioms
-   FormulaSetFree(early_comprehension_instances);
-   //FormulaSetFree(later_comprehension_instances);
-   FormulaSetFree(subformulas);
-   //FormulaSetFree(generalizations);
-   //exit(0);
-   /*
-   proofstate->later_comprehension_instances = ClauseSetAlloc();
-   ClauseSet_p final = proofstate->later_comprehension_instances;
-   WFormula_p target = later_comprehension_instances->anchor->succ;
-   //WFormulaPrint(GlobalOut,target,true);printf("\n");
-   //FormulaSet_p comp_archive = FormulaSetAlloc();
-   
-   FormulaSetDocInital(GlobalOut, OutputLevel, later_comprehension_instances);
-   FormulaSetPreprocConjectures(later_comprehension_instances,
-                                    proofstate->f_ax_archive,
-                                    answer_limit>0,
-                                    conjectures_are_questions);
-   
-   //WFormulaCNF(target,final,proofstate->terms,proofstate->terms->vars);
-   
-   FormulaSetCNF2(later_comprehension_instances,
-						proofstate->f_ax_archive,
-						proofstate->later_comprehension_instances,
-						proofstate->terms,
-						proofstate->terms->vars,
-						proofstate->gc_terms,
-						miniscope_limit);
+   FormulaSet_p early_comprehension_instances,subformulas;
+   if (generalized_comprehension == 1)
+   {
+		subformulas = FormulaSetAlloc();
+		proofstate->comprehension_instances = ClauseSetAlloc();
+		FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+		early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+		FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
+		FormulaSetFree(early_comprehension_instances);
+		FormulaSetFree(subformulas);
+	}
+	else if (generalized_comprehension == 2)
+	{
+		subformulas = FormulaSetAlloc();
+		proofstate->comprehension_instances = ClauseSetAlloc();
+		FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
+		early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+		FormulaSet_p generalizations = GeneralizeFormulas(proofstate,subformulas,2);
+		FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
+		FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
+		FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
+		FormulaSetFree(early_comprehension_instances);
+		FormulaSetFree(later_comprehension_instances);
+		FormulaSetFree(subformulas);
+		FormulaSetFree(generalizations);
+	}
 	
-   //exit(0);
-   */
-   //printf("LATER COMPREHENSION INSTANCES:\n");
-   //FormulaSetPrint(GlobalOut,proofstate->later_comprehension_instances,true);
-   //printf("\nSuccessful comprehension creation.\n");
-   
-   
-   //exit(0);
+	//exit(0);
    
    /////////////////////////////////////////////////////////////////////////////////////
    /*
@@ -964,8 +926,31 @@ CLState_p process_options(int argc, char* argv[])
 
    while((handle = CLStateGetOpt(state, &arg, opts)))
    {
-      switch(handle->option_code)
+      switch(handle->option_code) //John
       {
+		case OPT_COMPREHENSION:
+				if (strcmp(arg,"0") == 0)
+				{
+					generalized_comprehension = 0;
+					break;
+				}
+				else if (strcmp(arg,"1") == 0)
+				{
+					generalized_comprehension = 1;
+					break;
+				}
+				else if (strcmp(arg,"2") == 0)
+				{
+					generalized_comprehension = 2;
+					break;
+				}
+				else
+				{
+					Error("Must provide an argument of 0,1, or 2 for comprehension.",OTHER_ERROR);
+					assert(false);
+				}
+				//generalized_comprehension = arg;
+				break;
       case OPT_VERBOSE:
             Verbose = CLStateGetIntArg(handle, arg);
             break;

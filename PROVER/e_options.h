@@ -182,6 +182,7 @@ typedef enum
    OPT_DEF_CNF,
    OPT_MINISCOPE_LIMIT,
    OPT_PRINT_TYPES,
+   OPT_COMPREHENSION,  //John
    OPT_DUMMY
 }OptionCodes;
 
@@ -194,6 +195,13 @@ typedef enum
 
 OptCell opts[] =
 {
+	{OPT_COMPREHENSION,
+		'z', 'comprehension',
+		ReqArg, NULL,
+		"0: Do not create any comprehension instances at start of proof search."
+		"1: Create comprehension instances only for subformuls."
+		"2: Create comprehension instances for subformulas, negations of subformulas, generalizations."},
+		
    {OPT_HELP,
     'h', "help",
     NoArg, NULL,

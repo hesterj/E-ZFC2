@@ -527,7 +527,7 @@ Opt_p CLStateGetOpt(CLState_p state, char** arg, OptCell options[])
       state->argc--;
       while(state->argv[state->argi])
       {
-    state->argi++;
+			state->argi++;
       }
       return NULL;
    }
