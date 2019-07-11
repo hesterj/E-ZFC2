@@ -2129,7 +2129,8 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
                                      state->unprocessed);  
                                      
 
-   //  Put the first 10 schema instances in, so that we avoid countersatisfiability                                  
+   //  Put the first 10 schema instances in, so that we avoid countersatisfiability
+   /*                                  
 	if (state->processed_count == 0)
    {
 		Clause_p handle;
@@ -2141,13 +2142,13 @@ Clause_p ProcessClause(ProofState_p state, ProofControl_p control,
 			ClauseSetInsert(state->tmp_store,handle);
 			i++;
 		}
-	}
-                                    
+	}            
    if ((state->comprehension_instances->members > 0) && (state->processed_count%50 == 0))
    {
 		//clause = ClauseSetExtractFirst(state->comprehension_instances);
 		clause = state->comprehension_instances->anchor->succ;
 	}
+	*/
 	
    //EvalListPrintComment(GlobalOut, clause->evaluations); printf("\n");
    if(OutputLevel==1)
