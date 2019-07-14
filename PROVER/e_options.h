@@ -195,13 +195,6 @@ typedef enum
 
 OptCell opts[] =
 {
-	{OPT_COMPREHENSION,
-		'z', 'comprehension',
-		ReqArg, NULL,
-		"0: Do not create any comprehension instances at start of proof search."
-		"1: Create comprehension instances only for subformuls."
-		"2: Create comprehension instances for subformulas, negations of subformulas, generalizations."},
-		
    {OPT_HELP,
     'h', "help",
     NoArg, NULL,
@@ -1382,6 +1375,15 @@ OptCell opts[] =
     '\0', "print-types",
     NoArg, NULL,
     "Print the type of every term. Useful for debugging purposes."},
+    
+	
+     {OPT_COMPREHENSION,
+		'z', 'comprehension',
+		ReqArg, NULL,
+		"0: Do not create any comprehension instances at start of proof search."
+		"1: Create comprehension instances only for subformuls."
+		"2: Create comprehension instances for subformulas, negations of subformulas, generalizations."},
+	
 
    {OPT_NOOPT,
     '\0', NULL,

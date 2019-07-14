@@ -169,6 +169,8 @@ static Opt_p find_long_opt(char* option, OptCell options[])
       }
       len++;
    }
+   //printf("%s\n",option);
+   
    for(i=0; options[i].option_code; i++)
    {
       if((strncmp(options[i].longopt, option, len)==0) &&

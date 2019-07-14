@@ -420,20 +420,25 @@ int main(int argc, char* argv[])
    */  //Create comprehension instances corresponding to subformulas of axioms
    // We have possible generalizations of TERMS here, need to iterate through the tree of a formula, and create new formulas
    // based on the stack of possible generalizations of terms we find with this method...
-   
+   printf("Input formulas:\n");
+   FormulaSetPrint(GlobalOut,proofstate->f_axioms,true);
    FormulaSet_p early_comprehension_instances,subformulas;
    if (generalized_comprehension == 1)
    {
+	   	printf("\n z1\n");
 		subformulas = FormulaSetAlloc();
 		proofstate->comprehension_instances = ClauseSetAlloc();
 		FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
 		early_comprehension_instances = GenerateComprehensionInstances(proofstate,subformulas);
+		printf("Comprehension instances: %ld\n",early_comprehension_instances->members);
+		FormulaSetPrint(GlobalOut,early_comprehension_instances,true);	
 		FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
 		FormulaSetFree(early_comprehension_instances);
 		FormulaSetFree(subformulas);
 	}
 	else if (generalized_comprehension == 2)
 	{
+	   	printf("\n z2\n");
 		subformulas = FormulaSetAlloc();
 		proofstate->comprehension_instances = ClauseSetAlloc();
 		FormulaSetCollectSubformulas(proofstate,proofstate->f_axioms,subformulas);
@@ -447,8 +452,6 @@ int main(int argc, char* argv[])
 		FormulaSetFree(subformulas);
 		FormulaSetFree(generalizations);
 	}
-	
-	//exit(0);
    
    /////////////////////////////////////////////////////////////////////////////////////
    /*
@@ -928,6 +931,7 @@ CLState_p process_options(int argc, char* argv[])
    {
       switch(handle->option_code) //John
       {
+			
 		case OPT_COMPREHENSION:
 				if (strcmp(arg,"0") == 0)
 				{
@@ -951,6 +955,7 @@ CLState_p process_options(int argc, char* argv[])
 				}
 				//generalized_comprehension = arg;
 				break;
+			
       case OPT_VERBOSE:
             Verbose = CLStateGetIntArg(handle, arg);
             break;
