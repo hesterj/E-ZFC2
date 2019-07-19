@@ -447,13 +447,16 @@ int main(int argc, char* argv[])
 		FormulaSet_p later_comprehension_instances = GenerateComprehensionInstances(proofstate,generalizations);
 		FormulaSetInsertSet(proofstate->f_axioms,early_comprehension_instances);
 		FormulaSetInsertSet(proofstate->f_axioms,later_comprehension_instances);
+		FormulaSetPrint(GlobalOut,early_comprehension_instances,true);
+		FormulaSetPrint(GlobalOut,later_comprehension_instances,true);
 		FormulaSetFree(early_comprehension_instances);
 		FormulaSetFree(later_comprehension_instances);
 		FormulaSetFree(subformulas);
 		FormulaSetFree(generalizations);
+		
 	}
    
-   /////////////////////////////////////////////////////////////////////////////////////
+   ////////////////////////////////////////////////////////////////////////////////////
    /*
    */
 
